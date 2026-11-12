@@ -15,15 +15,11 @@ import type {
   GlobalBroadcast
 } from './types';
 import { 
-  currentUserMock, 
-  contactsMock, 
-  communitiesMock, 
-  communityPostsMock, 
-  chatMessagesMock, 
   mockReports,
-  bubbleRequestsMock,
   managedUsersMock,
-  globalBroadcastsMock
+  globalBroadcastsMock,
+  chatMessagesMock,
+  contactsMock
 } from './mockData';
 import { DashboardView } from './components/DashboardView';
 import { CommunityView } from './components/CommunityView';
@@ -32,12 +28,50 @@ import { MSNToastContainer } from './components/MSNToastContainer';
 import { GlobalModals } from './components/GlobalModals';
 import { ExploreCommunitiesModal } from './components/ExploreCommunitiesModal';
 import { playMsnOnlineChime } from './utils/sound';
+import { authService } from './services/authService';
+import { Logo } from './components/Logo';
 import confetti from 'canvas-confetti';
 
+const guestUser: UserProfile = {
+  id: 'guest',
+  name: 'Invitadx',
+  pronouns: 'Elle / He',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+  pin: 'BL-INVITADO',
+  referredByPin: '',
+  referredByName: '',
+  status: 'disponible',
+  personalMessage: 'Burbuja LGBTIQA+ Lara ✨',
+  currentSong: '',
+  allowWhatsAppBridge: false,
+  whatsAppNumber: '',
+  invitationsRemaining: 0,
+  reputationScore: 100
+};
+
+const initialDefaultCommunities: Community[] = [
+  {
+    id: 'comm-bqto',
+    name: 'Gays Barquisimeto & Lara',
+    description: 'Comunidad local para encuentros seguros, planes culturales en Barquisimeto, rutas de café y apoyo en el estado Lara.',
+    category: 'Encuentros & Cultura',
+    icon: '🌆',
+    isPinned: true,
+    isJoined: true,
+    isClosed: false,
+    memberCount: 1,
+    activeNow: 1,
+    tags: ['Barquisimeto', 'Lara', 'Cultura', 'Seguridad'],
+    members: []
+  }
+];
+
 export function App() {
-  // Current user state
-  const [currentUser, setCurrentUser] = useState<UserProfile>(currentUserMock);
-  const [contacts, setContacts] = useState<Contact[]>(contactsMock);
+  const savedUser = authService.getSavedUser();
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => savedUser || guestUser);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!savedUser);
+
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [activeTab, setActiveTab] = useState<'burbuja' | 'comunidades' | 'perfil'>('burbuja');
   
   // Theme state: defaults to 'light', persists to localStorage
@@ -72,29 +106,11 @@ export function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Communities dynamic state with pinned persistence from localStorage (solo 1 fijado)
-  const [communities, setCommunities] = useState<Community[]>(() => {
-    try {
-      const savedPinned = JSON.parse(localStorage.getItem('burbuja_pinned_communities') || '[]');
-      const singlePinnedId = Array.isArray(savedPinned) && savedPinned.length > 0
-        ? savedPinned[0]
-        : communitiesMock.find(c => c.isPinned)?.id;
-
-      return communitiesMock.map(c => ({
-        ...c,
-        isPinned: c.id === singlePinnedId
-      }));
-    } catch {
-      return communitiesMock;
-    }
-  });
-  const [selectedCommunity, setSelectedCommunity] = useState<Community>(communitiesMock[0]);
-  const [posts] = useState<CommunityPost[]>(
-    Object.values(communityPostsMock).flat()
-  );
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
-    chatMessagesMock['comm-bqto'] || []
-  );
+  // Communities dynamic state
+  const [communities, setCommunities] = useState<Community[]>(initialDefaultCommunities);
+  const [selectedCommunity, setSelectedCommunity] = useState<Community>(initialDefaultCommunities[0]);
+  const [posts] = useState<CommunityPost[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   // Modals state
   const [isSharePINOpen, setIsSharePINOpen] = useState(false);
@@ -104,14 +120,14 @@ export function App() {
   const [selectedStoryContact, setSelectedStoryContact] = useState<Contact | null>(null);
   const [reportTargetContact, setReportTargetContact] = useState<Contact | null>(null);
   const [isSuperadminOpen, setIsSuperadminOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(() => !authService.getSavedUser());
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
   const [isCommunityRolesOpen, setIsCommunityRolesOpen] = useState(false);
   const [managingCommunity, setManagingCommunity] = useState<Community | null>(null);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isRadarOpen, setIsRadarOpen] = useState(false);
   const [activeDirectChatContact, setActiveDirectChatContact] = useState<Contact | null>(null);
-  const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>(bubbleRequestsMock);
+  const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>([]);
   const [sentRadarPins, setSentRadarPins] = useState<string[]>([]);
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(managedUsersMock);
   const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(globalBroadcastsMock);
@@ -123,15 +139,7 @@ export function App() {
     caption: string;
     timestamp: string;
     reactions: { emoji: string; count: number }[];
-  }[]>([
-    {
-      id: 'my-st-1',
-      mediaUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80',
-      caption: 'Iniciando la semana con buena vibra en la Burbuja 🌈',
-      timestamp: 'Hace 30 min',
-      reactions: [{ emoji: '✨', count: 15 }, { emoji: '💖', count: 23 }]
-    }
-  ]);
+  }[]>([]);
 
   // Reports state
   const [reports, setReports] = useState<UserReport[]>(mockReports);
@@ -143,26 +151,7 @@ export function App() {
   // WLM Nudge / Zump State
   const [isZumping, setIsZumping] = useState(false);
 
-  const isDetoxActive = currentUser.status === 'desconectado';
-
-  // Spawn sample MSN notification periodically (only if not disconnected!)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (currentUser.status !== 'desconectado') {
-        const sampleContact = contacts[0];
-        triggerMsnToast({
-          id: `toast-${Date.now()}`,
-          title: 'Contacto en Línea',
-          message: `${sampleContact.name} acaba de iniciar sesión`,
-          avatar: sampleContact.avatar
-        });
-      } else {
-        setBufferedToastsCount(prev => prev + 1);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, [currentUser.status, contacts]);
+  const isDetoxActive = currentUser?.status === 'desconectado';
 
   const triggerMsnToast = (toast: MSNToast) => {
     playMsnOnlineChime();
@@ -781,39 +770,28 @@ export function App() {
   };
 
   const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(guestUser);
+    setIsLoggedIn(false);
+    setContacts([]);
     setIsAuthOpen(true);
     triggerMsnToast({
       id: `toast-logout-${Date.now()}`,
       title: 'Sesión cerrada',
       message: 'Has salido de tu cuenta de forma segura.',
-      avatar: currentUser.avatar
+      avatar: guestUser.avatar
     });
   };
 
   const handleDeleteAccountPermanently = () => {
+    authService.logout();
     try {
       localStorage.removeItem('burbuja_pinned_communities');
-      localStorage.removeItem('burbuja_user');
-      localStorage.removeItem('burbuja_auth');
     } catch {}
 
-    const guestUser: UserProfile = {
-      id: 'guest',
-      name: 'Invitadx',
-      pronouns: 'Elle / He',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      pin: 'BL-00000',
-      referredByPin: '',
-      referredByName: '',
-      status: 'desconectado',
-      personalMessage: 'Cuenta eliminada',
-      currentSong: '',
-      allowWhatsAppBridge: false,
-      whatsAppNumber: '',
-      invitationsRemaining: 0,
-      reputationScore: 0
-    };
     setCurrentUser(guestUser);
+    setIsLoggedIn(false);
+    setContacts([]);
     setIsAuthOpen(true);
     triggerMsnToast({
       id: `toast-del-${Date.now()}`,
@@ -870,7 +848,46 @@ export function App() {
     }`}>
       {/* Contenedor de Vistas Principales */}
       <main className="flex-1 max-w-lg w-full mx-auto px-4 pt-4">
-        {isDetoxActive ? (
+        {!isLoggedIn ? (
+          <div className="py-12 px-4 text-center space-y-6">
+            <div className="flex justify-center">
+              <Logo size="lg" />
+            </div>
+            <div className="space-y-3 max-w-sm mx-auto">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-400 text-xs font-bold">
+                🫧 Red Social Privada por Invitación
+              </span>
+              <h2 className="text-2xl font-black text-slate-100 tracking-tight">
+                Barquisimeto & Lara
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Un entorno seguro, libre de perfiles falsos y con trazabilidad de confianza para personas diversas.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 max-w-xs mx-auto space-y-2 text-left text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                <span>Acceso por <strong>PIN único</strong> o <strong>invitación</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-pink-400 shrink-0" />
+                <span>Cédula protegida por <strong>Hash SHA-256</strong></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                <span>Radar de proximidad con <strong>distancia segura</strong></span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className="w-full max-w-xs py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white font-bold text-sm shadow-xl shadow-pink-600/25 active:scale-95 transition-all"
+            >
+              Iniciar Sesión / Crear Cuenta
+            </button>
+          </div>
+        ) : isDetoxActive ? (
           <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
         ) : (
           <>
@@ -952,7 +969,7 @@ export function App() {
       <GlobalModals
         currentUser={currentUser}
         contacts={contacts}
-        availableContacts={contactsMock}
+        availableContacts={contacts}
         theme={theme}
         reports={reports}
         managingCommunity={managingCommunity}
@@ -993,7 +1010,11 @@ export function App() {
         onCloseReport={() => setReportTargetContact(null)}
         onSubmitReport={handleSubmitReport}
         onCloseAuth={() => setIsAuthOpen(false)}
-        onLoginSuccess={(user) => setCurrentUser(user)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsLoggedIn(true);
+          setIsAuthOpen(false);
+        }}
         onCloseSuperadmin={() => setIsSuperadminOpen(false)}
         onUpdateReportStatus={handleUpdateReportStatus}
         onCloseCreateCommunity={() => setIsCreateCommunityOpen(false)}

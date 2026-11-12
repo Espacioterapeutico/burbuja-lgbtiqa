@@ -2,318 +2,376 @@ import React, { useState } from 'react';
 import { 
   X, 
   KeyRound, 
-  Mail, 
-  Lock, 
   User, 
   Sparkles, 
-  AlertCircle
+  AlertCircle,
+  ShieldCheck,
+  CheckCircle2,
+  Copy,
+  Check,
+  Loader2,
+  ArrowRight
 } from 'lucide-react';
 import { Logo } from './Logo';
 import type { UserProfile } from '../types';
+import { authService } from '../services/authService';
+import confetti from 'canvas-confetti';
 
 interface AuthModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onLoginSuccess: (user: UserProfile) => void;
+  canClose?: boolean;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  onLoginSuccess
+  onLoginSuccess,
+  canClose = false
 }) => {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [tab, setTab] = useState<'login' | 'register'>('register');
   
   // Login form state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPass, setLoginPass] = useState('');
+  const [loginPin, setLoginPin] = useState('');
 
   // Register form state
-  const [referralPin, setReferralPin] = useState('');
   const [regName, setRegName] = useState('');
   const [regPronouns, setRegPronouns] = useState('Elle / He');
-  const [regEmail, setRegEmail] = useState('');
+  const [regCedula, setRegCedula] = useState('');
+  const [referralPin, setReferralPin] = useState('');
 
+  // UI state
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createdUser, setCreatedUser] = useState<UserProfile | null>(null);
+  const [copiedPin, setCopiedPin] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleGoogleLogin = () => {
-    // Simulating Google OAuth (Gmail)
-    const googleUser: UserProfile = {
-      id: `google-${Date.now()}`,
-      name: 'Usuario Google / Gmail',
-      pronouns: 'Ella / She',
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
-      pin: `BL-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      referredByPin: 'BL-9842K',
-      referredByName: 'Alex Rivera',
-      status: 'disponible',
-      personalMessage: 'Conectadx con cuenta de Google ✨',
-      currentSong: 'Raye - Genesis',
-      allowWhatsAppBridge: true,
-      whatsAppNumber: '+584123334455',
-      invitationsRemaining: 3,
-      reputationScore: 100
-    };
-    onLoginSuccess(googleUser);
-    onClose();
-  };
-
-  const handleClassicLogin = (e: React.FormEvent) => {
+  // LOGIN POR PIN
+  const handlePinLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!loginEmail || !loginPass) {
-      setError('Por favor completa todos los campos.');
-      return;
-    }
+    const cleanPin = loginPin.trim().toUpperCase();
 
-    const mockUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      name: loginEmail.split('@')[0] || 'Miembro Burbuja',
-      pronouns: 'Elle / He',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      pin: `BL-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      referredByPin: 'BL-9842K',
-      referredByName: 'Alex Rivera',
-      status: 'disponible',
-      personalMessage: 'Iniciando sesión en la Burbuja 🌈',
-      currentSong: '',
-      allowWhatsAppBridge: true,
-      whatsAppNumber: '+584149998877',
-      invitationsRemaining: 3,
-      reputationScore: 100
-    };
-
-    onLoginSuccess(mockUser);
-    onClose();
-  };
-
-  const handleRegisterWithReferral = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const cleanPin = referralPin.trim().toUpperCase();
     if (!cleanPin) {
-      setError('El PIN de referido de 8 caracteres es OBLIGATORIO para registrarte.');
+      setError('Por favor introduce tu PIN (ej: BL-XXXXX).');
       return;
     }
 
-    if (!regName.trim()) {
-      setError('Por favor indica tu nombre o apodo.');
+    setIsLoading(true);
+    try {
+      const user = await authService.loginWithPin(cleanPin);
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      onLoginSuccess(user);
+      onClose?.();
+    } catch (err: any) {
+      setError(err?.message || 'Error al iniciar sesión con el PIN.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const cleanName = regName.trim();
+    const cleanCedula = regCedula.trim().toUpperCase();
+    const cleanReferral = referralPin.trim().toUpperCase();
+
+    if (!cleanName) {
+      setError('Por favor ingresa tu nombre o apodo.');
       return;
     }
 
-    // Generate their own 8-character PIN
-    const generatedPin = `BL-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    if (!cleanCedula || cleanCedula.length < 5) {
+      setError('Por favor ingresa un número de cédula válido (ej: V-12345678).');
+      return;
+    }
 
-    const newUser: UserProfile = {
-      id: `new-${Date.now()}`,
-      name: regName.trim(),
-      pronouns: regPronouns,
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
-      pin: generatedPin,
-      referredByPin: cleanPin,
-      referredByName: 'Referente de Confianza',
-      status: 'disponible',
-      personalMessage: '¡Recién llegadx a la Burbuja! 🏳️‍🌈',
-      currentSong: '',
-      allowWhatsAppBridge: true,
-      whatsAppNumber: '',
-      invitationsRemaining: 3,
-      reputationScore: 100
-    };
+    if (!cleanReferral) {
+      setError('El código de invitación es obligatorio para ingresar a la Burbuja.');
+      return;
+    }
 
-    onLoginSuccess(newUser);
-    onClose();
+    setIsLoading(true);
+    try {
+      const newUser = await authService.register({
+        name: cleanName,
+        pronouns: regPronouns,
+        cedula: cleanCedula,
+        referralPin: cleanReferral
+      });
+
+      confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+      setCreatedUser(newUser);
+    } catch (err: any) {
+      setError(err?.message || 'Error al registrar tu cuenta.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopyPin = (pin: string) => {
+    navigator.clipboard?.writeText(pin);
+    setCopiedPin(true);
+    setTimeout(() => setCopiedPin(false), 2500);
+  };
+
+  const handleFinishRegistration = () => {
+    if (createdUser) {
+      onLoginSuccess(createdUser);
+      onClose?.();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-700/80 p-6 shadow-2xl text-center overflow-hidden">
-        {/* Glow */}
+        {/* Glow de fondo */}
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 blur-3xl pointer-events-none rounded-full" />
 
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 hover:bg-slate-800 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {canClose && onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
 
-        {/* Brand Logo in Modal */}
+        {/* Logo */}
         <div className="flex justify-center mb-3">
           <Logo size="md" />
         </div>
 
-        {/* Tabs: Login vs Register with Referral PIN */}
-        <div className="flex bg-slate-800/80 rounded-2xl p-1 mb-5">
-          <button
-            onClick={() => { setTab('login'); setError(null); }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === 'login' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Iniciar Sesión
-          </button>
-          <button
-            onClick={() => { setTab('register'); setError(null); }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-              tab === 'register' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Crear con Invitación
-          </button>
-        </div>
-
-        {/* Error Notification */}
-        {error && (
-          <div className="mb-4 flex items-center gap-2 text-xs text-rose-300 bg-rose-950/40 border border-rose-900/60 p-2.5 rounded-xl text-left">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* TAB 1: LOGIN */}
-        {tab === 'login' ? (
-          <div className="space-y-4">
-            {/* Google Gmail Sign In Button */}
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-md transition-all active:scale-95"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>Continuar con Google (Gmail)</span>
-            </button>
-
-            <div className="flex items-center my-3">
-              <div className="flex-1 border-t border-slate-800" />
-              <span className="px-3 text-[10px] text-slate-500 font-bold uppercase">o con correo</span>
-              <div className="flex-1 border-t border-slate-800" />
+        {/* Si el usuario recién se registró, le mostramos su PIN de bienvenida */}
+        {createdUser ? (
+          <div className="space-y-4 py-2 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <form onSubmit={handleClassicLogin} className="space-y-3">
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                <input
-                  type="email"
-                  placeholder="Tu correo electrónico"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
-                />
-              </div>
+            <div>
+              <h3 className="text-lg font-black text-white">¡Bienvenidx a la Burbuja!</h3>
+              <p className="text-xs text-slate-300 mt-1">
+                Hola <strong className="text-pink-300">{createdUser.name}</strong>, tu cuenta ha sido creada exitosamente en la red de Lara.
+              </p>
+            </div>
 
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-                <input
-                  type="password"
-                  placeholder="Contraseña"
-                  value={loginPass}
-                  onChange={(e) => setLoginPass(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
-                />
+            <div className="p-4 rounded-2xl bg-slate-950/80 border border-pink-500/50 space-y-2">
+              <span className="text-[10px] font-black uppercase text-pink-300 tracking-wider block">
+                Tu PIN Personal de Acceso
+              </span>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-mono text-2xl font-black text-white tracking-widest bg-pink-950/60 px-3 py-1 rounded-xl border border-pink-500/40">
+                  {createdUser.pin}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopyPin(createdUser.pin)}
+                  className="p-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white transition-colors"
+                  title="Copiar PIN"
+                >
+                  {copiedPin ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+                </button>
               </div>
+              <p className="text-[10px] text-amber-200/90 leading-tight">
+                ⚠️ <strong>Guarda este código.</strong> No usamos contraseñas tradicionales: tu PIN es tu llave para iniciar sesión en cualquier dispositivo.
+              </p>
+            </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-lg transition-transform active:scale-95"
-              >
-                Entrar a la Burbuja
-              </button>
-            </form>
+            <button
+              onClick={handleFinishRegistration}
+              className="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
+            >
+              <span>Entrar a mi Burbuja</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         ) : (
-          /* TAB 2: REGISTER WITH MANDATORY REFERRAL PIN */
-          <form onSubmit={handleRegisterWithReferral} className="space-y-3 text-left">
-            {/* Mandatory Referral PIN Field */}
-            <div className="p-3 bg-pink-950/30 border border-pink-500/40 rounded-2xl space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-pink-400" />
-                <span>PIN de Referido (Obligatorio)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Ejemplo: BL-9842K"
-                maxLength={9}
-                value={referralPin}
-                onChange={(e) => setReferralPin(e.target.value.toUpperCase())}
-                className="w-full bg-slate-950 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2 px-3 text-center font-mono text-sm tracking-widest text-pink-200 placeholder:text-slate-600 focus:outline-none"
-              />
-              <span className="text-[10px] text-slate-400 block leading-tight">
-                Emitido por un usuario existente. La red de confianza protege a la comunidad.
-              </span>
+          <>
+            {/* Tabs: Registrarme vs Iniciar Sesión con PIN */}
+            <div className="flex bg-slate-800/80 rounded-2xl p-1 mb-4">
+              <button
+                onClick={() => { setTab('register'); setError(null); }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  tab === 'register' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Crear Cuenta (Invitación)
+              </button>
+              <button
+                onClick={() => { setTab('login'); setError(null); }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  tab === 'login' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Entrar con mi PIN
+              </button>
             </div>
 
-            {/* Profile Info */}
-            <div className="space-y-2">
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Nombre o Apodo"
-                  value={regName}
-                  onChange={(e) => setRegName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-3 text-xs text-slate-200 focus:outline-none"
-                />
+            {/* Error Notification */}
+            {error && (
+              <div className="mb-4 flex items-center gap-2 text-xs text-rose-300 bg-rose-950/40 border border-rose-900/60 p-2.5 rounded-xl text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{error}</span>
               </div>
+            )}
 
-              <div className="flex gap-2">
-                <select
-                  value={regPronouns}
-                  onChange={(e) => setRegPronouns(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-300 focus:outline-none w-full"
+            {/* TAB 1: REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN */}
+            {tab === 'register' ? (
+              <form onSubmit={handleRegister} className="space-y-3 text-left">
+                {/* Nombre o Apodo */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                    Nombre o Apodo
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="¿Cómo te decimos?"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 pl-10 pr-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Pronombres */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                    Pronombres
+                  </label>
+                  <select
+                    value={regPronouns}
+                    onChange={(e) => setRegPronouns(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-200 focus:outline-none w-full"
+                  >
+                    <option>Elle / He</option>
+                    <option>Ella / She</option>
+                    <option>Él / Him</option>
+                    <option>Prefiero no decir</option>
+                  </select>
+                </div>
+
+                {/* Cédula de Identidad con aviso de Hash de Privacidad */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-pink-400" />
+                      <span>Cédula de Identidad</span>
+                    </label>
+                    <span className="text-[9px] text-pink-400/80">Protegida por Hash</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ej: V-24123456"
+                    value={regCedula}
+                    onChange={(e) => setRegCedula(e.target.value.toUpperCase())}
+                    required
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 px-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none font-mono"
+                  />
+                  <span className="text-[9px] text-slate-500 block mt-0.5 leading-tight">
+                    🔒 Tu cédula se cifra en el servidor (ej: <code>V-24***456</code>). Solo se usa para evitar cuentas duplicadas y nunca es visible.
+                  </span>
+                </div>
+
+                {/* Código de Invitación */}
+                <div className="p-3 bg-pink-950/20 border border-pink-500/40 rounded-2xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                      <span>Código de Invitación</span>
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ej: BL-7K9A2 o BL-FUNDADOR"
+                    maxLength={14}
+                    value={referralPin}
+                    onChange={(e) => setReferralPin(e.target.value.toUpperCase())}
+                    required
+                    className="w-full bg-slate-950 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2 px-3 text-center font-mono text-sm tracking-widest text-pink-200 placeholder:text-slate-600 focus:outline-none"
+                  />
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Emitido por un usuario de confianza.</span>
+                    <button
+                      type="button"
+                      onClick={() => setReferralPin('BL-FUNDADOR')}
+                      className="text-pink-400 hover:text-pink-300 underline font-semibold"
+                    >
+                      Soy el Fundador
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-[10px] text-slate-400 flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                  <span>
+                    Al registrarte, el sistema te generará al azar tu propio PIN personal y 3 invitaciones.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <option>Elle / He</option>
-                  <option>Ella / She</option>
-                  <option>Él / Him</option>
-                  <option>Otro / Prefiero no decir</option>
-                </select>
-              </div>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Registrando en la Burbuja...</span>
+                    </>
+                  ) : (
+                    <span>Crear Mi Cuenta & Recibir PIN</span>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* TAB 2: INICIAR SESIÓN CON PIN PERSONAL */
+              <form onSubmit={handlePinLogin} className="space-y-4 text-left">
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+                  <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Tu PIN Personal</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="BL-XXXXX"
+                    maxLength={10}
+                    value={loginPin}
+                    onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
+                    required
+                    className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-3 px-3 text-center font-mono text-lg tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400 block text-center leading-tight">
+                    Ingresa el PIN aleatorio que se te asignó al crear tu cuenta.
+                  </span>
+                </div>
 
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-2.5" />
-                <input
-                  type="email"
-                  placeholder="Correo (o Gmail)"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-10 pr-3 text-xs text-slate-200 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-[10px] text-slate-400 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-              <span>
-                Al crear tu cuenta el sistema generará automáticamente tu propio PIN de 8 caracteres y tus 3 invitaciones.
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95"
-            >
-              Validar PIN y Crear Mi Cuenta
-            </button>
-          </form>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verificando PIN...</span>
+                    </>
+                  ) : (
+                    <span>Entrar a mi Burbuja</span>
+                  )}
+                </button>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>

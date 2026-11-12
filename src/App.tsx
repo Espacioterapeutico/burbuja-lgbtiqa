@@ -1,0 +1,1037 @@
+import { useState, useEffect } from 'react';
+import type { 
+  UserProfile, 
+  Contact, 
+  Community, 
+  CommunityPost, 
+  ChatMessage, 
+  UserStatus, 
+  UserReport, 
+  MSNToast, 
+  CommunityRole, 
+  CommunityMember,
+  BubbleConnectionRequest,
+  ManagedUser,
+  GlobalBroadcast
+} from './types';
+import { 
+  currentUserMock, 
+  contactsMock, 
+  communitiesMock, 
+  communityPostsMock, 
+  chatMessagesMock, 
+  mockReports,
+  bubbleRequestsMock,
+  managedUsersMock,
+  globalBroadcastsMock
+} from './mockData';
+import { DashboardView } from './components/DashboardView';
+import { CommunityView } from './components/CommunityView';
+import { DetoxStandbyView } from './components/DetoxStandbyView';
+import { MSNToastContainer } from './components/MSNToastContainer';
+import { GlobalModals } from './components/GlobalModals';
+import { ExploreCommunitiesModal } from './components/ExploreCommunitiesModal';
+import { playMsnOnlineChime } from './utils/sound';
+import confetti from 'canvas-confetti';
+
+export function App() {
+  // Current user state
+  const [currentUser, setCurrentUser] = useState<UserProfile>(currentUserMock);
+  const [contacts, setContacts] = useState<Contact[]>(contactsMock);
+  const [activeTab, setActiveTab] = useState<'burbuja' | 'comunidades' | 'perfil'>('burbuja');
+  
+  // Theme state: defaults to 'light', persists to localStorage
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const saved = localStorage.getItem('burbuja_theme');
+      return (saved === 'dark' || saved === 'light') ? saved : 'light';
+    } catch {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('burbuja_theme', theme);
+    } catch {}
+
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light-mode');
+      document.body.classList.remove('dark');
+      document.body.classList.add('light-mode');
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light-mode');
+      document.body.classList.add('dark');
+      document.body.classList.remove('light-mode');
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // Communities dynamic state with pinned persistence from localStorage (solo 1 fijado)
+  const [communities, setCommunities] = useState<Community[]>(() => {
+    try {
+      const savedPinned = JSON.parse(localStorage.getItem('burbuja_pinned_communities') || '[]');
+      const singlePinnedId = Array.isArray(savedPinned) && savedPinned.length > 0
+        ? savedPinned[0]
+        : communitiesMock.find(c => c.isPinned)?.id;
+
+      return communitiesMock.map(c => ({
+        ...c,
+        isPinned: c.id === singlePinnedId
+      }));
+    } catch {
+      return communitiesMock;
+    }
+  });
+  const [selectedCommunity, setSelectedCommunity] = useState<Community>(communitiesMock[0]);
+  const [posts] = useState<CommunityPost[]>(
+    Object.values(communityPostsMock).flat()
+  );
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
+    chatMessagesMock['comm-bqto'] || []
+  );
+
+  // Modals state
+  const [isSharePINOpen, setIsSharePINOpen] = useState(false);
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+  const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [selectedStoryContact, setSelectedStoryContact] = useState<Contact | null>(null);
+  const [reportTargetContact, setReportTargetContact] = useState<Contact | null>(null);
+  const [isSuperadminOpen, setIsSuperadminOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
+  const [isCommunityRolesOpen, setIsCommunityRolesOpen] = useState(false);
+  const [managingCommunity, setManagingCommunity] = useState<Community | null>(null);
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
+  const [isRadarOpen, setIsRadarOpen] = useState(false);
+  const [activeDirectChatContact, setActiveDirectChatContact] = useState<Contact | null>(null);
+  const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>(bubbleRequestsMock);
+  const [sentRadarPins, setSentRadarPins] = useState<string[]>([]);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(managedUsersMock);
+  const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(globalBroadcastsMock);
+
+  // My stories state
+  const [myStories, setMyStories] = useState<{
+    id: string;
+    mediaUrl: string;
+    caption: string;
+    timestamp: string;
+    reactions: { emoji: string; count: number }[];
+  }[]>([
+    {
+      id: 'my-st-1',
+      mediaUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&q=80',
+      caption: 'Iniciando la semana con buena vibra en la Burbuja 🌈',
+      timestamp: 'Hace 30 min',
+      reactions: [{ emoji: '✨', count: 15 }, { emoji: '💖', count: 23 }]
+    }
+  ]);
+
+  // Reports state
+  const [reports, setReports] = useState<UserReport[]>(mockReports);
+
+  // MSN Toasts state
+  const [toasts, setToasts] = useState<MSNToast[]>([]);
+  const [bufferedToastsCount, setBufferedToastsCount] = useState(0);
+
+  // WLM Nudge / Zump State
+  const [isZumping, setIsZumping] = useState(false);
+
+  const isDetoxActive = currentUser.status === 'desconectado';
+
+  // Spawn sample MSN notification periodically (only if not disconnected!)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (currentUser.status !== 'desconectado') {
+        const sampleContact = contacts[0];
+        triggerMsnToast({
+          id: `toast-${Date.now()}`,
+          title: 'Contacto en Línea',
+          message: `${sampleContact.name} acaba de iniciar sesión`,
+          avatar: sampleContact.avatar
+        });
+      } else {
+        setBufferedToastsCount(prev => prev + 1);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [currentUser.status, contacts]);
+
+  const triggerMsnToast = (toast: MSNToast) => {
+    playMsnOnlineChime();
+    setToasts(prev => [...prev.slice(-2), toast]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id));
+    }, 4500);
+  };
+
+  // Status Handlers
+  const handleUpdateStatus = (newStatus: UserStatus) => {
+    const wasDetox = currentUser.status === 'desconectado';
+    setCurrentUser(prev => ({ ...prev, status: newStatus }));
+
+    // Reconnecting from Detox
+    if (wasDetox && newStatus !== 'desconectado') {
+      playMsnOnlineChime();
+      triggerMsnToast({
+        id: `toast-reconnect-${Date.now()}`,
+        title: '¡De vuelta a la Burbuja!',
+        message: bufferedToastsCount > 0 
+          ? `Te pusiste al día. Tienes ${bufferedToastsCount} novedades comunitarias.` 
+          : 'Reconectadx con éxito. Todos los canales restaurados.',
+        avatar: currentUser.avatar
+      });
+      setBufferedToastsCount(0);
+    }
+  };
+
+  const handleUpdatePersonalMessage = (msg: string) => {
+    setCurrentUser(prev => ({ ...prev, personalMessage: msg }));
+    triggerMsnToast({
+      id: `toast-msg-${Date.now()}`,
+      title: 'Mensaje Actualizado',
+      message: `Tus contactos ahora leen: "${msg.slice(0, 30)}..."`,
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleUpdateProfile = (updates: Partial<UserProfile>) => {
+    setCurrentUser(prev => ({ ...prev, ...updates }));
+    triggerMsnToast({
+      id: `toast-profile-${Date.now()}`,
+      title: '¡Perfil Actualizado! ✨',
+      message: 'Tus cambios en nombre, pronombres y música se han guardado con éxito.',
+      avatar: updates.avatar || currentUser.avatar
+    });
+  };
+
+  const handleToggleWhatsAppBridge = () => {
+    setCurrentUser(prev => ({ ...prev, allowWhatsAppBridge: !prev.allowWhatsAppBridge }));
+  };
+
+  const handleAddContact = (newContact: Contact) => {
+    setContacts(prev => {
+      if (prev.some(c => c.pin === newContact.pin)) return prev;
+      return [newContact, ...prev];
+    });
+  };
+
+  const handleSelectCommunity = (comm: Community) => {
+    setSelectedCommunity(comm);
+    setChatMessages(chatMessagesMock[comm.id] || [
+      {
+        id: `welcome-${comm.id}`,
+        communityId: comm.id,
+        senderName: 'Burbuja Bot',
+        senderAvatar: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
+        senderPronouns: 'Comunidad',
+        text: `¡Bienvenidxs al espacio grupal de ${comm.name}! Recuerda mantener la empatía y respeto mutuo.`,
+        timestamp: 'Ahora',
+        isModerator: true,
+      }
+    ]);
+  };
+
+  const handleCreateCommunity = (newCommunity: Community) => {
+    setCommunities(prev => [newCommunity, ...prev]);
+    setSelectedCommunity(newCommunity);
+    setActiveTab('comunidades');
+    triggerMsnToast({
+      id: `toast-comm-${Date.now()}`,
+      title: '¡Comunidad Creada!',
+      message: `Eres 👑 Administrador de "${newCommunity.name}".`,
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleUpdateCommunity = (communityId: string, updates: Partial<Community>) => {
+    setCommunities(prev =>
+      prev.map(c => (c.id === communityId ? { ...c, ...updates } : c))
+    );
+    setSelectedCommunity(prev => (prev.id === communityId ? { ...prev, ...updates } : prev));
+    if (managingCommunity?.id === communityId) {
+      setManagingCommunity(prev => (prev ? { ...prev, ...updates } : null));
+    }
+  };
+
+  const handleUpdateMemberRole = (communityId: string, userId: string, newRole: CommunityRole) => {
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId && c.members) {
+          const updatedMembers = c.members.map(m =>
+            m.userId === userId ? { ...m, role: newRole } : m
+          );
+          return { ...c, members: updatedMembers };
+        }
+        return c;
+      })
+    );
+    setSelectedCommunity(prev => {
+      if (prev.id === communityId && prev.members) {
+        return {
+          ...prev,
+          members: prev.members.map(m => (m.userId === userId ? { ...m, role: newRole } : m))
+        };
+      }
+      return prev;
+    });
+    if (managingCommunity?.id === communityId && managingCommunity.members) {
+      setManagingCommunity(prev =>
+        prev
+          ? {
+              ...prev,
+              members: prev.members?.map(m => (m.userId === userId ? { ...m, role: newRole } : m))
+            }
+          : null
+      );
+    }
+    triggerMsnToast({
+      id: `toast-role-${Date.now()}`,
+      title: 'Rol Comunitario Actualizado',
+      message: `El rol ahora es: ${newRole === 'admin' ? '👑 Administrador' : newRole === 'moderador' ? '🛡️ Moderador' : '💬 Participante'}.`,
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleMuteMember = (communityId: string, userId: string, muteDurationText: string | null) => {
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId && c.members) {
+          const updatedMembers = c.members.map(m =>
+            m.userId === userId ? { ...m, isMutedUntil: muteDurationText || undefined } : m
+          );
+          return { ...c, members: updatedMembers };
+        }
+        return c;
+      })
+    );
+    setSelectedCommunity(prev => {
+      if (prev.id === communityId && prev.members) {
+        return {
+          ...prev,
+          members: prev.members.map(m =>
+            m.userId === userId ? { ...m, isMutedUntil: muteDurationText || undefined } : m
+          )
+        };
+      }
+      return prev;
+    });
+    if (managingCommunity?.id === communityId && managingCommunity.members) {
+      setManagingCommunity(prev =>
+        prev
+          ? {
+              ...prev,
+              members: prev.members?.map(m =>
+                m.userId === userId ? { ...m, isMutedUntil: muteDurationText || undefined } : m
+              )
+            }
+          : null
+      );
+    }
+    triggerMsnToast({
+      id: `toast-mute-${Date.now()}`,
+      title: muteDurationText ? 'Miembro Silenciado' : 'Silencio Revocado',
+      message: muteDurationText ? `El usuario ha sido vetado: ${muteDurationText}.` : 'El usuario puede volver a participar en el chat.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleRemoveMember = (communityId: string, userId: string) => {
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId && c.members) {
+          const updatedMembers = c.members.filter(m => m.userId !== userId);
+          return { ...c, members: updatedMembers, memberCount: Math.max(1, c.memberCount - 1) };
+        }
+        return c;
+      })
+    );
+    setSelectedCommunity(prev => {
+      if (prev.id === communityId && prev.members) {
+        return {
+          ...prev,
+          members: prev.members.filter(m => m.userId !== userId),
+          memberCount: Math.max(1, prev.memberCount - 1)
+        };
+      }
+      return prev;
+    });
+    if (managingCommunity?.id === communityId && managingCommunity.members) {
+      setManagingCommunity(prev =>
+        prev
+          ? {
+              ...prev,
+              members: prev.members?.filter(m => m.userId !== userId),
+              memberCount: Math.max(1, prev.memberCount - 1)
+            }
+          : null
+      );
+    }
+    triggerMsnToast({
+      id: `toast-kick-${Date.now()}`,
+      title: 'Miembro Expulsado',
+      message: 'Se ha sacado al usuario de la comunidad de forma segura.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleAcceptRequest = (communityId: string, requestId: string) => {
+    let acceptedUser: { id: string; name: string; avatar: string; pin: string } | null = null;
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId) {
+          const req = c.pendingRequests?.find(r => r.id === requestId);
+          if (req) {
+            acceptedUser = { id: req.userId, name: req.userName, avatar: req.userAvatar, pin: req.userPin };
+            const updatedRequests = (c.pendingRequests || []).filter(r => r.id !== requestId);
+            const newMember: CommunityMember = {
+              userId: req.userId,
+              userName: req.userName,
+              userAvatar: req.userAvatar,
+              userPin: req.userPin,
+              role: 'participante',
+              joinedAt: 'Recién aceptado'
+            };
+            return {
+              ...c,
+              pendingRequests: updatedRequests,
+              members: [...(c.members || []), newMember],
+              memberCount: c.memberCount + 1
+            };
+          }
+        }
+        return c;
+      })
+    );
+    if (selectedCommunity.id === communityId) {
+      setSelectedCommunity(prev => {
+        const req = prev.pendingRequests?.find(r => r.id === requestId);
+        if (req) {
+          return {
+            ...prev,
+            pendingRequests: (prev.pendingRequests || []).filter(r => r.id !== requestId),
+            members: [
+              ...(prev.members || []),
+              {
+                userId: req.userId,
+                userName: req.userName,
+                userAvatar: req.userAvatar,
+                userPin: req.userPin,
+                role: 'participante',
+                joinedAt: 'Recién aceptado'
+              }
+            ],
+            memberCount: prev.memberCount + 1
+          };
+        }
+        return prev;
+      });
+    }
+    triggerMsnToast({
+      id: `toast-accepted-${Date.now()}`,
+      title: 'Solicitud Aprobada',
+      message: 'El participante ha sido admitido en el espacio seguro.',
+      avatar: acceptedUser ? (acceptedUser as any).avatar : currentUser.avatar
+    });
+  };
+
+  const handleRejectRequest = (communityId: string, requestId: string) => {
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId) {
+          return {
+            ...c,
+            pendingRequests: (c.pendingRequests || []).filter(r => r.id !== requestId)
+          };
+        }
+        return c;
+      })
+    );
+    if (selectedCommunity.id === communityId) {
+      setSelectedCommunity(prev => ({
+        ...prev,
+        pendingRequests: (prev.pendingRequests || []).filter(r => r.id !== requestId)
+      }));
+    }
+    triggerMsnToast({
+      id: `toast-reject-${Date.now()}`,
+      title: 'Solicitud Denegada',
+      message: 'Se rechazó la solicitud de ingreso.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleAddMemberByPin = (communityId: string, pin: string): boolean => {
+    const contactMatch = contacts.find(c => c.pin.toUpperCase() === pin.toUpperCase()) ||
+      contactsMock.find(c => c.pin.toUpperCase() === pin.toUpperCase());
+    if (!contactMatch) return false;
+
+    let added = false;
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId) {
+          const alreadyMember = c.members?.some(m => m.userId === contactMatch.id || m.userPin === contactMatch.pin);
+          if (alreadyMember) return c;
+          added = true;
+          const newMember: CommunityMember = {
+            userId: contactMatch.id,
+            userName: contactMatch.name,
+            userAvatar: contactMatch.avatar,
+            userPin: contactMatch.pin,
+            role: 'participante',
+            joinedAt: 'Invitado por PIN'
+          };
+          return {
+            ...c,
+            members: [...(c.members || []), newMember],
+            memberCount: c.memberCount + 1
+          };
+        }
+        return c;
+      })
+    );
+
+    if (added && selectedCommunity.id === communityId) {
+      setSelectedCommunity(prev => ({
+        ...prev,
+        members: [
+          ...(prev.members || []),
+          {
+            userId: contactMatch.id,
+            userName: contactMatch.name,
+            userAvatar: contactMatch.avatar,
+            userPin: contactMatch.pin,
+            role: 'participante',
+            joinedAt: 'Invitado por PIN'
+          }
+        ],
+        memberCount: prev.memberCount + 1
+      }));
+    }
+    return added;
+  };
+
+  const handleOpenReportMember = (member: CommunityMember) => {
+    const contactRef: Contact = {
+      id: member.userId,
+      name: member.userName,
+      pronouns: 'Elle',
+      avatar: member.userAvatar,
+      pin: member.userPin,
+      referredByPin: 'BL-9842K',
+      referredByName: 'Alex Rivera',
+      status: 'disponible',
+      personalMessage: 'Miembro de comunidad',
+      currentSong: '',
+      allowWhatsAppBridge: false,
+      stories: []
+    };
+    setIsCommunityRolesOpen(false);
+    setReportTargetContact(contactRef);
+  };
+
+  const handleTogglePinCommunity = (communityId: string) => {
+    let nowPinned = false;
+    let targetName = '';
+    setCommunities(prev => {
+      const targetComm = prev.find(c => c.id === communityId);
+      const willPin = !targetComm?.isPinned;
+      nowPinned = willPin;
+      targetName = targetComm?.name || '';
+
+      const updated = prev.map(c => {
+        if (c.id === communityId) {
+          return { ...c, isPinned: willPin };
+        }
+        // Solo se puede fijar uno: si se fija este, cualquier otro se des-fija
+        if (willPin) {
+          return { ...c, isPinned: false };
+        }
+        return c;
+      });
+
+      try {
+        const pinnedIds = willPin ? [communityId] : [];
+        localStorage.setItem('burbuja_pinned_communities', JSON.stringify(pinnedIds));
+      } catch {}
+
+      return updated;
+    });
+
+    triggerMsnToast({
+      id: `toast-pin-${Date.now()}`,
+      title: nowPinned ? '📌 Grupo Fijado' : '📌 Grupo Desfijado',
+      message: nowPinned
+        ? `"${targetName}" ahora aparecerá fijado de primero.`
+        : `"${targetName}" vuelve al orden habitual.`,
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleSendMessage = (
+    text: string, 
+    isZump: boolean = false,
+    media?: { audioUrl?: string; audioDurationSeconds?: number; imageUrl?: string }
+  ) => {
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      communityId: selectedCommunity.id,
+      senderName: currentUser.name,
+      senderAvatar: currentUser.avatar,
+      senderPronouns: currentUser.pronouns,
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isZump,
+      audioUrl: media?.audioUrl,
+      audioDurationSeconds: media?.audioDurationSeconds,
+      imageUrl: media?.imageUrl
+    };
+    setChatMessages(prev => [...prev, newMsg]);
+
+    // Actualizar última actividad para que el grupo suba al primer lugar de los no fijados
+    const nowIso = new Date().toISOString();
+    setCommunities(prev =>
+      prev.map(c => (c.id === selectedCommunity.id ? { ...c, lastActivityAt: nowIso } : c))
+    );
+    setSelectedCommunity(prev => (prev.id === selectedCommunity.id ? { ...prev, lastActivityAt: nowIso } : prev));
+  };
+
+  const handleTriggerZump = () => {
+    setIsZumping(true);
+    setTimeout(() => setIsZumping(false), 700);
+  };
+
+  const handlePublishMyStory = (mediaUrl: string, caption: string) => {
+    const newStory = {
+      id: `story-${Date.now()}`,
+      mediaUrl,
+      caption,
+      timestamp: 'Justo ahora',
+      reactions: []
+    };
+    setMyStories(prev => [newStory, ...prev]);
+    triggerMsnToast({
+      id: `toast-story-${Date.now()}`,
+      title: 'Historia Publicada',
+      message: 'Tu historia de 24h ya está visible para tu red.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleViewMyStory = () => {
+    if (myStories.length === 0) return;
+    const selfContact: Contact = {
+      id: currentUser.id,
+      name: currentUser.name,
+      pronouns: currentUser.pronouns,
+      avatar: currentUser.avatar,
+      pin: currentUser.pin,
+      status: currentUser.status,
+      personalMessage: currentUser.personalMessage,
+      currentSong: currentUser.currentSong,
+      allowWhatsAppBridge: currentUser.allowWhatsAppBridge,
+      stories: myStories
+    };
+    setSelectedStoryContact(selfContact);
+  };
+
+  const handleToggleBlockContact = (contact: Contact, reason?: string) => {
+    setContacts(prev =>
+      prev.map(c => {
+        if (c.id === contact.id) {
+          const isNowBlocked = !c.isBlockedByMe;
+          return {
+            ...c,
+            isBlockedByMe: isNowBlocked,
+            blockedAt: isNowBlocked ? 'Hoy' : undefined,
+            blockReason: isNowBlocked ? (reason || 'Límites personales y tranquilidad') : undefined
+          };
+        }
+        return c;
+      })
+    );
+    triggerMsnToast({
+      id: `toast-block-${Date.now()}`,
+      title: contact.isBlockedByMe ? 'Contacto Desbloqueado' : 'Contacto Bloqueado',
+      message: contact.isBlockedByMe 
+        ? `Has restaurado la interacción con ${contact.name}.`
+        : `Has bloqueado a ${contact.name}. Motivo registrado con transparencia en Seguridad.`,
+      avatar: contact.avatar
+    });
+  };
+
+  const handleToggleRadarVisible = (active: boolean) => {
+    setCurrentUser(prev => ({
+      ...prev,
+      radarVisible: active
+    }));
+    triggerMsnToast({
+      id: `toast-radar-${Date.now()}`,
+      title: active ? 'Tu Burbuja está Activa 🫧' : 'Burbuja Oculta 🫥',
+      message: active 
+        ? 'Ahora eres visible y puedes explorar personas cercanas.'
+        : 'Tu burbuja ahora está oculta para explorar.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleSendConnectionRequest = (target: Contact, _introMessage: string) => {
+    setSentRadarPins(prev => [...prev, target.pin]);
+    triggerMsnToast({
+      id: `toast-conn-${Date.now()}`,
+      title: '¡Solicitud para Conectar Burbujas enviada! 🫧',
+      message: `Le enviaste una invitación a ${target.name}.`,
+      avatar: target.avatar
+    });
+  };
+
+  const handleAcceptBubbleRequest = (req: BubbleConnectionRequest) => {
+    const newContact: Contact = {
+      id: req.fromUserId,
+      name: req.fromUserName,
+      pronouns: req.fromUserPronouns,
+      avatar: req.fromUserAvatar,
+      pin: req.fromUserPin,
+      status: 'disponible',
+      personalMessage: req.introMessage || '¡Acabamos de conectar burbujas! ✨',
+      currentSong: req.song || '',
+      distanceKm: req.distanceKm,
+      city: req.city,
+      allowWhatsAppBridge: false,
+      stories: []
+    };
+
+    setContacts(prev => [newContact, ...prev]);
+    setBubbleRequests(prev => prev.filter(r => r.id !== req.id));
+
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.6 }
+    });
+
+    triggerMsnToast({
+      id: `toast-connected-${Date.now()}`,
+      title: '¡Burbujas Conectadas! 🫧✨',
+      message: `Ahora puedes chatear directamente con ${req.fromUserName}.`,
+      avatar: req.fromUserAvatar
+    });
+  };
+
+  const handleRejectBubbleRequest = (reqId: string) => {
+    setBubbleRequests(prev => prev.filter(r => r.id !== reqId));
+    triggerMsnToast({
+      id: `toast-reject-bubble-${Date.now()}`,
+      title: 'Solicitud descartada',
+      message: 'La invitación para conectar burbujas ha sido retirada.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleToggleUserEnabled = (userId: string) => {
+    setManagedUsers(prev =>
+      prev.map(u => (u.id === userId ? { ...u, isEnabled: !u.isEnabled } : u))
+    );
+  };
+
+  const handleGrantInvitations = (userId: string, count: number) => {
+    setManagedUsers(prev =>
+      prev.map(u => (u.id === userId ? { ...u, invitationsRemaining: Math.max(0, u.invitationsRemaining + count) } : u))
+    );
+  };
+
+  const handleToggleCommunityFreeze = (commId: string) => {
+    setCommunities(prev =>
+      prev.map(c => (c.id === commId ? { ...c, isFrozen: !c.isFrozen } : c))
+    );
+  };
+
+  const handleSendBroadcast = (broadcast: GlobalBroadcast) => {
+    setGlobalBroadcasts(prev => [broadcast, ...prev]);
+    triggerMsnToast({
+      id: `toast-bc-${Date.now()}`,
+      title: broadcast.urgency === 'alerta_seguridad' ? '🚨 Alerta de Seguridad' : '📢 Comunicado Oficial',
+      message: broadcast.title,
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleSubmitReport = (newRepData: Omit<UserReport, 'id' | 'timestamp' | 'status' | 'inviterAlerted'>) => {
+    const newReport: UserReport = {
+      ...newRepData,
+      id: `rep-${Date.now()}`,
+      timestamp: 'Recién emitido',
+      status: 'investigando_cadena',
+      inviterAlerted: true
+    };
+    setReports(prev => [newReport, ...prev]);
+  };
+
+  const handleUpdateReportStatus = (id: string, status: UserReport['status'], inviterAlerted?: boolean) => {
+    setReports(prev =>
+      prev.map(r => (r.id === id ? { ...r, status, ...(inviterAlerted !== undefined ? { inviterAlerted } : {}) } : r))
+    );
+  };
+
+  const handleLogout = () => {
+    setIsAuthOpen(true);
+    triggerMsnToast({
+      id: `toast-logout-${Date.now()}`,
+      title: 'Sesión cerrada',
+      message: 'Has salido de tu cuenta de forma segura.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleDeleteAccountPermanently = () => {
+    try {
+      localStorage.removeItem('burbuja_pinned_communities');
+      localStorage.removeItem('burbuja_user');
+      localStorage.removeItem('burbuja_auth');
+    } catch {}
+
+    const guestUser: UserProfile = {
+      id: 'guest',
+      name: 'Invitadx',
+      pronouns: 'Elle / He',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      pin: 'BL-00000',
+      referredByPin: '',
+      referredByName: '',
+      status: 'desconectado',
+      personalMessage: 'Cuenta eliminada',
+      currentSong: '',
+      allowWhatsAppBridge: false,
+      whatsAppNumber: '',
+      invitationsRemaining: 0,
+      reputationScore: 0
+    };
+    setCurrentUser(guestUser);
+    setIsAuthOpen(true);
+    triggerMsnToast({
+      id: `toast-del-${Date.now()}`,
+      title: 'Cuenta eliminada',
+      message: 'Tu cuenta y datos locales han sido borrados de este dispositivo.',
+      avatar: ''
+    });
+  };
+
+  const handleJoinCommunity = (commToJoin: Community) => {
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === commToJoin.id) {
+          const newMember: CommunityMember = {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userAvatar: currentUser.avatar,
+            userPin: currentUser.pin,
+            role: 'participante',
+            joinedAt: 'Recién unidx'
+          };
+          const existingMembers = c.members || [];
+          return {
+            ...c,
+            isJoined: true,
+            memberCount: c.memberCount + 1,
+            members: [...existingMembers, newMember]
+          };
+        }
+        return c;
+      })
+    );
+
+    playMsnOnlineChime();
+    confetti({
+      particleCount: 55,
+      spread: 65,
+      origin: { y: 0.6 }
+    });
+
+    triggerMsnToast({
+      id: `toast-join-${Date.now()}`,
+      title: '¡Te has unido a la comunidad! 🌈',
+      message: `Ahora formas parte de "${commToJoin.name}". Ya la tienes en Mis Comunidades.`,
+      avatar: commToJoin.icon
+    });
+  };
+
+  return (
+    <div className={`min-h-screen transition-all duration-300 ${
+      theme === 'light' ? 'light-mode bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'
+    } flex flex-col justify-between ${
+      isDetoxActive ? 'filter grayscale contrast-105' : ''
+    }`}>
+      {/* Contenedor de Vistas Principales */}
+      <main className="flex-1 max-w-lg w-full mx-auto px-4 pt-4">
+        {isDetoxActive ? (
+          <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
+        ) : (
+          <>
+            {activeTab === 'burbuja' && (
+              <DashboardView
+                currentUser={currentUser}
+                contacts={contacts}
+                communities={communities}
+                posts={posts}
+                myStories={myStories}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                onOpenCreateStory={() => setIsCreateStoryOpen(true)}
+                onViewMyStory={handleViewMyStory}
+                onSelectCommunity={(comm) => {
+                  handleSelectCommunity(comm);
+                  setActiveTab('comunidades');
+                }}
+                onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+                onOpenExplore={() => setIsExploreOpen(true)}
+                onOpenRadar={() => setIsRadarOpen(true)}
+                onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
+                bubbleRequests={bubbleRequests}
+                onAcceptBubbleRequest={handleAcceptBubbleRequest}
+                onRejectBubbleRequest={handleRejectBubbleRequest}
+                onTogglePinCommunity={handleTogglePinCommunity}
+                onUpdateStatus={handleUpdateStatus}
+                onUpdatePersonalMessage={handleUpdatePersonalMessage}
+                onToggleWhatsAppBridge={handleToggleWhatsAppBridge}
+                onOpenSharePIN={() => setIsSharePINOpen(true)}
+                onOpenAddContact={() => setIsAddContactOpen(true)}
+                onViewStory={(contact) => setSelectedStoryContact(contact)}
+                onOpenReport={(contact) => setReportTargetContact(contact)}
+                onToggleBlockContact={handleToggleBlockContact}
+                onOpenProfile={() => setIsProfileOpen(true)}
+                onOpenSuperadmin={() => setIsSuperadminOpen(true)}
+                onOpenAuth={() => setIsAuthOpen(true)}
+                onLogout={handleLogout}
+                onDeleteAccount={handleDeleteAccountPermanently}
+              />
+            )}
+
+            {activeTab === 'comunidades' && (
+              <CommunityView
+                communities={communities}
+                selectedCommunity={selectedCommunity}
+                onSelectCommunity={handleSelectCommunity}
+                posts={posts}
+                chatMessages={chatMessages}
+                onSendMessage={handleSendMessage}
+                currentUser={currentUser}
+                isZumping={isZumping}
+                onTriggerZump={handleTriggerZump}
+                onOpenSharePIN={() => setIsSharePINOpen(true)}
+                onBack={() => setActiveTab('burbuja')}
+                onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+                onOpenManageCommunity={() => {
+                  setManagingCommunity(selectedCommunity);
+                  setIsCommunityRolesOpen(true);
+                }}
+                onMuteMember={handleMuteMember}
+                onAddContact={handleAddContact}
+                onOpenReport={(contact) => setReportTargetContact(contact)}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* 3. Notificaciones Retro MSN */}
+      {!isDetoxActive && (
+        <MSNToastContainer
+          toasts={toasts}
+          onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))}
+        />
+      )}
+
+      {/* 4. Modales Globales */}
+      <GlobalModals
+        currentUser={currentUser}
+        contacts={contacts}
+        availableContacts={contactsMock}
+        theme={theme}
+        reports={reports}
+        managingCommunity={managingCommunity}
+        selectedCommunity={selectedCommunity}
+        communities={communities}
+        managedUsers={managedUsers}
+        globalBroadcasts={globalBroadcasts}
+        onToggleUserEnabled={handleToggleUserEnabled}
+        onGrantInvitations={handleGrantInvitations}
+        onToggleCommunityFreeze={handleToggleCommunityFreeze}
+        onSendBroadcast={handleSendBroadcast}
+        isProfileOpen={isProfileOpen}
+        isSharePINOpen={isSharePINOpen}
+        isAddContactOpen={isAddContactOpen}
+        selectedStoryContact={selectedStoryContact}
+        isCreateStoryOpen={isCreateStoryOpen}
+        reportTargetContact={reportTargetContact}
+        isAuthOpen={isAuthOpen}
+        isSuperadminOpen={isSuperadminOpen}
+        isCreateCommunityOpen={isCreateCommunityOpen}
+        isCommunityRolesOpen={isCommunityRolesOpen}
+        isRadarOpen={isRadarOpen}
+        activeDirectChatContact={activeDirectChatContact}
+        sentRequestsPins={sentRadarPins}
+        onCloseRadar={() => setIsRadarOpen(false)}
+        onToggleRadarVisible={handleToggleRadarVisible}
+        onSendConnectionRequest={handleSendConnectionRequest}
+        onCloseDirectChat={() => setActiveDirectChatContact(null)}
+        onToggleTheme={handleToggleTheme}
+        onOpenSharePIN={() => setIsSharePINOpen(true)}
+        onCloseProfile={() => setIsProfileOpen(false)}
+        onCloseSharePIN={() => setIsSharePINOpen(false)}
+        onCloseAddContact={() => setIsAddContactOpen(false)}
+        onAddContact={handleAddContact}
+        onCloseStoryViewer={() => setSelectedStoryContact(null)}
+        onCloseCreateStory={() => setIsCreateStoryOpen(false)}
+        onPublishStory={handlePublishMyStory}
+        onCloseReport={() => setReportTargetContact(null)}
+        onSubmitReport={handleSubmitReport}
+        onCloseAuth={() => setIsAuthOpen(false)}
+        onLoginSuccess={(user) => setCurrentUser(user)}
+        onCloseSuperadmin={() => setIsSuperadminOpen(false)}
+        onUpdateReportStatus={handleUpdateReportStatus}
+        onCloseCreateCommunity={() => setIsCreateCommunityOpen(false)}
+        onCreateCommunity={handleCreateCommunity}
+        onCloseCommunityRoles={() => {
+          setIsCommunityRolesOpen(false);
+          setManagingCommunity(null);
+        }}
+        onUpdateCommunity={handleUpdateCommunity}
+        onUpdateMemberRole={handleUpdateMemberRole}
+        onMuteMember={handleMuteMember}
+        onRemoveMember={handleRemoveMember}
+        onAcceptRequest={handleAcceptRequest}
+        onRejectRequest={handleRejectRequest}
+        onAddMemberByPin={handleAddMemberByPin}
+        onOpenReportMember={handleOpenReportMember}
+        onToggleWhatsAppBridge={handleToggleWhatsAppBridge}
+        onUpdateStatus={handleUpdateStatus}
+        onUpdateProfile={handleUpdateProfile}
+      />
+
+      {/* Modal de Explorar Comunidades */}
+      <ExploreCommunitiesModal
+        isOpen={isExploreOpen}
+        onClose={() => setIsExploreOpen(false)}
+        communities={communities}
+        posts={posts}
+        currentUser={currentUser}
+        theme={theme}
+        onJoinCommunity={handleJoinCommunity}
+        onSelectCommunity={(comm) => {
+          setIsExploreOpen(false);
+          handleSelectCommunity(comm);
+          setActiveTab('comunidades');
+        }}
+      />
+    </div>
+  );
+}
+
+export default App;

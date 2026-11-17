@@ -1033,6 +1033,9 @@ export function App() {
           setCurrentUser(user);
           setIsLoggedIn(true);
           setIsAuthOpen(false);
+          if (authService.isSuperadmin(user)) {
+            setIsSuperadminOpen(true);
+          }
         }}
         onCloseSuperadmin={() => setIsSuperadminOpen(false)}
         onUpdateReportStatus={handleUpdateReportStatus}

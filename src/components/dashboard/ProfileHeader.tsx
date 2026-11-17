@@ -185,17 +185,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   </button>
                 )}
 
-                <button
-                  onClick={() => { setMenuOpen(false); onOpenSuperadmin(); }}
-                  className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-left transition-colors font-medium ${
-                    theme === 'light'
-                      ? 'text-purple-700 hover:bg-purple-50'
-                      : 'text-purple-300 hover:bg-slate-800'
-                  }`}
-                >
-                  <ShieldCheck className="w-4 h-4 text-purple-500" />
-                  <span>Portal Superadmin</span>
-                </button>
+                {(currentUser.id === 'superadmin-root' || currentUser.pin === 'BL-94X7A') && (
+                  <button
+                    onClick={() => { setMenuOpen(false); onOpenSuperadmin(); }}
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-left transition-colors font-medium ${
+                      theme === 'light'
+                        ? 'text-purple-700 hover:bg-purple-50'
+                        : 'text-purple-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-purple-500" />
+                    <span>Portal de Superadmin</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => { setMenuOpen(false); onUpdateStatus('desconectado'); }}

@@ -1,6 +1,27 @@
 import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types';
 
+export const SUPERADMIN_PIN = 'BL-94X7A';
+
+export const SUPERADMIN_PROFILE: UserProfile = {
+  id: 'superadmin-root',
+  name: 'Superadmin / Fundador',
+  pronouns: 'Sistema',
+  avatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+  pin: SUPERADMIN_PIN,
+  referredByPin: 'RAIZ',
+  referredByName: 'Sistema Central',
+  status: 'disponible',
+  personalMessage: 'Cuenta de Supervisión y Auditoría del Sistema 🛡️',
+  currentSong: '',
+  allowWhatsAppBridge: false,
+  whatsAppNumber: '',
+  invitationsRemaining: 999,
+  reputationScore: 100,
+  radarVisible: false,
+  city: 'Barquisimeto'
+};
+
 // Helper para calcular un hash seguro y enmascarado de cédula
 export function hashCedula(cedulaRaw: string): string {
   const clean = cedulaRaw.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -17,7 +38,8 @@ export function generateRandomPin(): string {
   for (let i = 0; i < 5; i++) {
     randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `BL-${randomCode}`;
+  const candidate = `BL-${randomCode}`;
+  return candidate === SUPERADMIN_PIN ? generateRandomPin() : candidate;
 }
 
 export interface RegisterParams {
@@ -29,57 +51,71 @@ export interface RegisterParams {
 }
 
 export const authService = {
+  isSuperadmin(user?: UserProfile | null): boolean {
+    if (!user) return false;
+    return user.id === 'superadmin-root' || user.pin === SUPERADMIN_PIN;
+  },
+
   // REGISTRO CON CÉDULA HASH Y CÓDIGO DE INVITACIÓN
   async register(params: RegisterParams): Promise<UserProfile> {
     const cleanReferral = params.referralPin.trim().toUpperCase();
     const cleanCedula = params.cedula.trim().toUpperCase();
     const cedulaHashVal = hashCedula(cleanCedula);
 
-    // 1. Verificar si la cédula ya está registrada
+    // 1. Verificar si la cédula ya está registrada en Supabase o registro local
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
       .eq('cedula_hash', cedulaHashVal)
       .maybeSingle();
 
-    if (existingUser) {
+    const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
+    const existingLocal = localDirectory.find((p) => p.cedula_hash === cedulaHashVal);
+
+    if (existingUser || existingLocal) {
       throw new Error('Este número de cédula ya tiene una cuenta activa en la Burbuja.');
     }
 
-    // 2. Verificar código de invitación
-    let inviterName = 'Génesis / Fundador';
-    let inviterPin = cleanReferral;
+    // 2. Verificar código de invitación (PIN del Superadmin Fundador BL-94X7A o de otro miembro)
+    let inviterName = 'Superadmin / Fundador';
+    let inviterPin = SUPERADMIN_PIN;
 
-    const isGenesisCode = cleanReferral === 'BL-ORIGEN' || cleanReferral === 'BL-FUNDADOR' || cleanReferral === 'FUNDADOR';
+    const isFounderCode =
+      cleanReferral === SUPERADMIN_PIN ||
+      cleanReferral === 'BL-ORIGEN' ||
+      cleanReferral === 'BL-FUNDADOR';
 
-    if (!isGenesisCode) {
+    if (!isFounderCode) {
       const { data: inviter } = await supabase
         .from('profiles')
         .select('*')
         .eq('pin', cleanReferral)
         .maybeSingle();
 
-      if (!inviter) {
+      const localInviter = localDirectory.find((p) => p.pin === cleanReferral);
+      const targetInviter = inviter || localInviter;
+
+      if (!targetInviter) {
         throw new Error('El PIN de invitación ingresado no existe en la red.');
       }
 
-      if (inviter.invitations_remaining <= 0) {
+      if (targetInviter.invitations_remaining <= 0) {
         throw new Error('Ese código de invitación ya no tiene pases disponibles.');
       }
 
-      inviterName = inviter.name;
-      inviterPin = inviter.pin;
+      inviterName = targetInviter.name;
+      inviterPin = targetInviter.pin;
 
-      // Restar 1 pase al invitador
-      await supabase
-        .from('profiles')
-        .update({ invitations_remaining: Math.max(0, inviter.invitations_remaining - 1) })
-        .eq('id', inviter.id);
+      if (inviter) {
+        await supabase
+          .from('profiles')
+          .update({ invitations_remaining: Math.max(0, inviter.invitations_remaining - 1) })
+          .eq('id', inviter.id);
+      }
     }
 
-    // 3. Generar PIN al azar único
+    // 3. Generar PIN al azar único para este nuevo usuario
     let newPin = generateRandomPin();
-    // Verificar colisión
     let attempts = 0;
     while (attempts < 5) {
       const { data: collision } = await supabase
@@ -87,7 +123,7 @@ export const authService = {
         .select('id')
         .eq('pin', newPin)
         .maybeSingle();
-      if (!collision) break;
+      if (!collision && !localDirectory.some((p) => p.pin === newPin)) break;
       newPin = generateRandomPin();
       attempts++;
     }
@@ -127,9 +163,13 @@ export const authService = {
       .insert([profileData]);
 
     if (insertErr) {
-      console.error('Error al insertar perfil en Supabase:', insertErr);
-      throw new Error(`Error en el servidor: ${insertErr.message}`);
+      console.warn('Aviso al insertar en Supabase (guardando respaldo local):', insertErr.message);
     }
+
+    try {
+      localDirectory.push(profileData);
+      localStorage.setItem('burbuja_local_profiles', JSON.stringify(localDirectory));
+    } catch {}
 
     const userProfile: UserProfile = {
       id: profileData.id,
@@ -157,41 +197,54 @@ export const authService = {
     return userProfile;
   },
 
-  // LOGIN POR PIN
+  // LOGIN POR PIN (Soporta tanto el PIN del Superadmin BL-94X7A como el PIN personal del usuario)
   async loginWithPin(pinInput: string): Promise<UserProfile> {
     const cleanPin = pinInput.trim().toUpperCase();
 
-    const { data: profile, error } = await supabase
+    // 1. Verificar si es la cuenta exclusiva del Superadmin / Fundador
+    if (cleanPin === SUPERADMIN_PIN) {
+      try {
+        localStorage.setItem('burbuja_user', JSON.stringify(SUPERADMIN_PROFILE));
+      } catch {}
+      return SUPERADMIN_PROFILE;
+    }
+
+    // 2. Buscar cuenta de usuario normal en Supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('pin', cleanPin)
       .maybeSingle();
 
-    if (error || !profile) {
+    const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
+    const localProfile = localDirectory.find((p) => p.pin === cleanPin);
+    const found = profile || localProfile;
+
+    if (!found) {
       throw new Error('No se encontró ninguna cuenta registrada con ese PIN.');
     }
 
-    if (profile.is_enabled === false) {
+    if (found.is_enabled === false) {
       throw new Error('Esta cuenta ha sido inhabilitada por moderación.');
     }
 
     const userProfile: UserProfile = {
-      id: profile.id,
-      name: profile.name,
-      pronouns: profile.pronouns,
-      avatar: profile.avatar,
-      pin: profile.pin,
-      referredByPin: profile.referred_by_pin,
-      referredByName: profile.referred_by_name,
-      status: profile.status as any,
-      personalMessage: profile.personal_message,
-      currentSong: profile.current_song,
-      allowWhatsAppBridge: profile.allow_whatsapp_bridge,
-      whatsAppNumber: profile.whatsapp_number,
-      invitationsRemaining: profile.invitations_remaining,
-      reputationScore: profile.reputation_score,
-      radarVisible: profile.radar_visible,
-      city: profile.city
+      id: found.id,
+      name: found.name,
+      pronouns: found.pronouns,
+      avatar: found.avatar,
+      pin: found.pin,
+      referredByPin: found.referred_by_pin,
+      referredByName: found.referred_by_name,
+      status: found.status as any,
+      personalMessage: found.personal_message,
+      currentSong: found.current_song,
+      allowWhatsAppBridge: found.allow_whatsapp_bridge,
+      whatsAppNumber: found.whatsapp_number,
+      invitationsRemaining: found.invitations_remaining,
+      reputationScore: found.reputation_score,
+      radarVisible: found.radar_visible,
+      city: found.city
     };
 
     try {
@@ -213,7 +266,7 @@ export const authService = {
 
   // ACTUALIZAR PERFIL EN SUPABASE Y LOCALSTORAGE
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
-    if (!userId || userId === 'guest') return;
+    if (!userId || userId === 'guest' || userId === 'superadmin-root') return;
 
     const dbUpdates: Record<string, any> = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;

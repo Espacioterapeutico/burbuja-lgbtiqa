@@ -346,23 +346,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <input
                     type="text"
-                    placeholder="Ej: BL-7K9A2 o BL-FUNDADOR"
+                    placeholder="Ej: BL-7K9A2"
                     maxLength={14}
                     value={referralPin}
                     onChange={(e) => setReferralPin(e.target.value.toUpperCase())}
                     required
                     className="w-full bg-slate-950 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2 px-3 text-center font-mono text-sm tracking-widest text-pink-200 placeholder:text-slate-600 focus:outline-none"
                   />
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Emitido por un usuario de confianza.</span>
-                    <button
-                      type="button"
-                      onClick={() => setReferralPin('BL-FUNDADOR')}
-                      className="text-pink-400 hover:text-pink-300 underline font-semibold"
-                    >
-                      Soy el Fundador
-                    </button>
-                  </div>
+                  <span className="text-[10px] text-slate-400 block">
+                    Emitido por un miembro existente de la red de confianza.
+                  </span>
                 </div>
 
                 <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-[10px] text-slate-400 flex items-center gap-2">

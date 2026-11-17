@@ -7,11 +7,14 @@ import {
   Check,
   ExternalLink,
   User,
-  Save
+  Save,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import type { UserProfile, UserStatus } from '../types';
 import { STATUS_CONFIG } from './StatusBadge';
 import { parseMusicLink, DEMO_MUSIC_PRESETS } from '../utils/musicParser';
+import { storageService } from '../services/storageService';
 
 interface ProfileViewProps {
   currentUser: UserProfile;
@@ -52,26 +55,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [status, setStatus] = useState<UserStatus>(currentUser.status);
   const [isSavedToast, setIsSavedToast] = useState(false);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Análisis inteligente de la música (YouTube vs Spotify vs texto plano)
   const parsedMusic = parseMusicLink(currentSong);
 
-  // Manejador de subida de foto personalizada desde archivo
-  const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Manejador de subida de foto personalizada comprimida a WebP en Supabase Storage
+  const handleAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setAvatar(reader.result);
-        setShowAvatarPicker(false);
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    setIsUploadingAvatar(true);
+    setCompressionInfo(null);
+    try {
+      const result = await storageService.uploadMedia(file, 'avatars', avatar);
+      setAvatar(result.url);
+      setCompressionInfo(
+        `Optimizada en WebP: ${result.originalSizeKB} KB → ${result.compressedSizeKB} KB (-${result.savedPercent}%)`
+      );
+      setShowAvatarPicker(false);
+    } catch (err: any) {
+      alert(err?.message || 'Error al comprimir y subir la imagen.');
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = '';
+    }
   };
 
   // Guardar todos los cambios del perfil
@@ -155,6 +166,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {showAvatarPicker ? 'Ocultar opciones de foto' : 'Cambiar foto de perfil'}
               </button>
 
+              {compressionInfo && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold animate-in fade-in">
+                  <Sparkles className="w-3 h-3" />
+                  <span>{compressionInfo}</span>
+                </div>
+              )}
+
               {/* Selector Desplegable de Avatares o Subida desde Galería */}
               {showAvatarPicker && (
                 <div className="w-full mt-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 animate-in fade-in zoom-in-95">
@@ -164,11 +182,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </span>
                     <button
                       type="button"
+                      disabled={isUploadingAvatar}
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 text-pink-300 border border-pink-500/40 text-[10px] font-bold transition-all flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 disabled:opacity-50 text-pink-300 border border-pink-500/40 text-[10px] font-bold transition-all flex items-center gap-1"
                     >
-                      <Camera className="w-3 h-3" />
-                      <span>Subir foto</span>
+                      {isUploadingAvatar ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Comprimiendo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-3 h-3" />
+                          <span>Subir foto</span>
+                        </>
+                      )}
                     </button>
                   </div>
 

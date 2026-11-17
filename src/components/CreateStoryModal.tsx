@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Send, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Sparkles, Send, Check, Camera, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { storageService } from '../services/storageService';
 
 interface CreateStoryModalProps {
   isOpen: boolean;
@@ -35,8 +36,34 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
   const [selectedMedia, setSelectedMedia] = useState(SAMPLE_STORY_PRESETS[0].url);
   const [caption, setCaption] = useState('');
   const [customUrl, setCustomUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [compressionBadge, setCompressionBadge] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setCompressionBadge(null);
+    try {
+      const result = await storageService.uploadMedia(file, 'stories');
+      setSelectedMedia(result.url);
+      setCustomUrl(result.url);
+      if (result.savedPercent > 0) {
+        setCompressionBadge(
+          `Comprimida: ${result.originalSizeKB} KB → ${result.compressedSizeKB} KB (-${result.savedPercent}%)`
+        );
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error al subir archivo.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
 
   const handlePublish = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +112,12 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
 
+            {compressionBadge && (
+              <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold">
+                ⚡ {compressionBadge}
+              </div>
+            )}
+
             <div className="absolute bottom-3 inset-x-3">
               <p className="text-xs text-white bg-black/50 backdrop-blur-md p-2 rounded-xl border border-white/10 truncate font-medium">
                 {caption.trim() || 'Tu pie de foto aparecerá aquí...'}
@@ -92,11 +125,39 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
             </div>
           </div>
 
-          {/* Quick preset selector */}
+          {/* Botón para subir foto propia comprimida o elegir preset */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-400 block mb-1.5">
-              Elige una imagen o momento:
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-semibold text-slate-400">
+                Sube tu foto o elige fondo:
+              </label>
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="px-2.5 py-1 rounded-xl bg-pink-600/20 hover:bg-pink-600/30 disabled:opacity-50 text-pink-300 border border-pink-500/40 text-[10px] font-bold flex items-center gap-1 transition-all"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Comprimiendo...</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-3 h-3" />
+                    <span>Subir de mi Galería</span>
+                  </>
+                )}
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*,video/*"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </div>
+
             <div className="grid grid-cols-4 gap-2">
               {SAMPLE_STORY_PRESETS.map((p) => {
                 const isSelected = selectedMedia === p.url && !customUrl.trim();
@@ -104,7 +165,7 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
                   <button
                     key={p.name}
                     type="button"
-                    onClick={() => { setSelectedMedia(p.url); setCustomUrl(''); }}
+                    onClick={() => { setSelectedMedia(p.url); setCustomUrl(''); setCompressionBadge(null); }}
                     className={`relative rounded-xl overflow-hidden border aspect-square transition-all ${
                       isSelected ? 'border-pink-500 ring-2 ring-pink-500/50 scale-105' : 'border-slate-800 opacity-70 hover:opacity-100'
                     }`}
@@ -136,12 +197,13 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
           </div>
 
           <p className="text-[10px] text-slate-500 leading-tight">
-            🔒 Recuerda: Tus contactos solo podrán enviarte reacciones con emojis (sin chats privados directos).
+            🔒 Las fotos se comprimen automáticamente en WebP ultraligero antes de subirse.
           </p>
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-500 hover:from-pink-500 hover:to-cyan-400 text-white font-bold text-xs shadow-lg transition-transform active:scale-95"
+            disabled={isUploading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-500 hover:from-pink-500 hover:to-cyan-400 disabled:opacity-50 text-white font-bold text-xs shadow-lg transition-transform active:scale-95"
           >
             <Send className="w-4 h-4" />
             <span>Publicar en mi Historia (24h)</span>

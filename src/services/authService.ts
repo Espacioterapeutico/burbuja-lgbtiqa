@@ -211,6 +211,33 @@ export const authService = {
     }
   },
 
+  // ACTUALIZAR PERFIL EN SUPABASE Y LOCALSTORAGE
+  async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    if (!userId || userId === 'guest') return;
+
+    const dbUpdates: Record<string, any> = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.pronouns !== undefined) dbUpdates.pronouns = updates.pronouns;
+    if (updates.avatar !== undefined) dbUpdates.avatar = updates.avatar;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.personalMessage !== undefined) dbUpdates.personal_message = updates.personalMessage;
+    if (updates.currentSong !== undefined) dbUpdates.current_song = updates.currentSong;
+    if (updates.allowWhatsAppBridge !== undefined) dbUpdates.allow_whatsapp_bridge = updates.allowWhatsAppBridge;
+    if (updates.whatsAppNumber !== undefined) dbUpdates.whatsapp_number = updates.whatsAppNumber;
+    if (updates.radarVisible !== undefined) dbUpdates.radar_visible = updates.radarVisible;
+
+    if (Object.keys(dbUpdates).length > 0) {
+      await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+    }
+
+    try {
+      const current = this.getSavedUser();
+      if (current && current.id === userId) {
+        localStorage.setItem('burbuja_user', JSON.stringify({ ...current, ...updates }));
+      }
+    } catch {}
+  },
+
   // CERRAR SESIÓN
   logout() {
     try {

@@ -168,6 +168,7 @@ export function App() {
   const handleUpdateStatus = (newStatus: UserStatus) => {
     const wasDetox = currentUser.status === 'desconectado';
     setCurrentUser(prev => ({ ...prev, status: newStatus }));
+    authService.updateProfile(currentUser.id, { status: newStatus });
 
     // Reconnecting from Detox
     if (wasDetox && newStatus !== 'desconectado') {
@@ -186,6 +187,7 @@ export function App() {
 
   const handleUpdatePersonalMessage = (msg: string) => {
     setCurrentUser(prev => ({ ...prev, personalMessage: msg }));
+    authService.updateProfile(currentUser.id, { personalMessage: msg });
     triggerMsnToast({
       id: `toast-msg-${Date.now()}`,
       title: 'Mensaje Actualizado',
@@ -196,16 +198,19 @@ export function App() {
 
   const handleUpdateProfile = (updates: Partial<UserProfile>) => {
     setCurrentUser(prev => ({ ...prev, ...updates }));
+    authService.updateProfile(currentUser.id, updates);
     triggerMsnToast({
       id: `toast-profile-${Date.now()}`,
       title: '¡Perfil Actualizado! ✨',
-      message: 'Tus cambios en nombre, pronombres y música se han guardado con éxito.',
+      message: 'Tus cambios en foto, nombre, pronombres y música se han guardado en la nube.',
       avatar: updates.avatar || currentUser.avatar
     });
   };
 
   const handleToggleWhatsAppBridge = () => {
-    setCurrentUser(prev => ({ ...prev, allowWhatsAppBridge: !prev.allowWhatsAppBridge }));
+    const nextVal = !currentUser.allowWhatsAppBridge;
+    setCurrentUser(prev => ({ ...prev, allowWhatsAppBridge: nextVal }));
+    authService.updateProfile(currentUser.id, { allowWhatsAppBridge: nextVal });
   };
 
   const handleAddContact = (newContact: Contact) => {

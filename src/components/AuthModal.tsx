@@ -12,11 +12,15 @@ import {
   Loader2,
   ArrowRight,
   Smartphone,
-  Download
+  Download,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Logo } from './Logo';
 import type { UserProfile } from '../types';
-import { authService } from '../services/authService';
+import { authService, COLLECTIVE_OPTIONS, type CollectiveCode } from '../services/authService';
 import { ApkDownloadModal } from './ApkDownloadModal';
 import confetti from 'canvas-confetti';
 
@@ -37,11 +41,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   
   // Login form state
   const [loginPin, setLoginPin] = useState('');
+  const [loginPass, setLoginPass] = useState('');
+  const [showLoginPass, setShowLoginPass] = useState(false);
 
   // Register form state
   const [regName, setRegName] = useState('');
-  const [regPronouns, setRegPronouns] = useState('Elle / He');
+  const [regCollective, setRegCollective] = useState<CollectiveCode>('G');
+  const [regPronouns, setRegPronouns] = useState('Él / Him');
   const [regCedula, setRegCedula] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [showRegPass, setShowRegPass] = useState(false);
   const [referralPin, setReferralPin] = useState('');
 
   // UI state
@@ -53,37 +63,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // LOGIN POR PIN
+  const selectedCollectiveInfo =
+    COLLECTIVE_OPTIONS.find((c) => c.code === regCollective) || COLLECTIVE_OPTIONS[0];
+
+  // LOGIN POR PIN + CONTRASEÑA
   const handlePinLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     const cleanPin = loginPin.trim().toUpperCase();
 
     if (!cleanPin) {
-      setError('Por favor introduce tu PIN (ej: BL-XXXXX).');
+      setError('Por favor introduce tu PIN.');
+      return;
+    }
+
+    if (!loginPass.trim()) {
+      setError('Por favor introduce tu contraseña.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const user = await authService.loginWithPin(cleanPin);
+      const user = await authService.loginWithPin(cleanPin, loginPass);
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       onLoginSuccess(user);
       onClose?.();
     } catch (err: any) {
-      setError(err?.message || 'Error al iniciar sesión con el PIN.');
+      setError(err?.message || 'Error al iniciar sesión.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN
+  // REGISTRO CON COLECTIVO, CÉDULA, CORREO, CONTRASEÑA Y CÓDIGO DE INVITACIÓN
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     const cleanName = regName.trim();
     const cleanCedula = regCedula.trim().toUpperCase();
+    const cleanEmail = regEmail.trim().toLowerCase();
+    const cleanPass = regPassword.trim();
     const cleanReferral = referralPin.trim().toUpperCase();
 
     if (!cleanName) {
@@ -92,7 +112,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     if (!cleanCedula || cleanCedula.length < 5) {
-      setError('Por favor ingresa un número de cédula válido (ej: V-12345678).');
+      setError('Por favor ingresa un número de cédula válido (ej: V-24123456).');
+      return;
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Por favor ingresa un correo electrónico válido para recuperación de cuenta.');
+      return;
+    }
+
+    if (cleanPass.length < 4) {
+      setError('Tu contraseña debe tener al menos 4 caracteres.');
       return;
     }
 
@@ -106,7 +136,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const newUser = await authService.register({
         name: cleanName,
         pronouns: regPronouns,
+        collective: regCollective,
         cedula: cleanCedula,
+        email: cleanEmail,
+        password: cleanPass,
         referralPin: cleanReferral
       });
 
@@ -133,8 +166,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-700/80 p-6 shadow-2xl text-center overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-sm my-auto rounded-3xl bg-slate-900 border border-slate-700/80 p-5 sm:p-6 shadow-2xl text-center overflow-hidden">
         {/* Glow de fondo */}
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 blur-3xl pointer-events-none rounded-full" />
 
@@ -152,7 +185,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <Logo size="md" />
         </div>
 
-        {/* Si el usuario recién se registró, le mostramos su PIN de bienvenida */}
+        {/* Si el usuario recién se registró, le mostramos su PIN personalizado según su colectivo */}
         {createdUser ? (
           <div className="space-y-4 py-2 animate-in zoom-in-95 duration-200 text-center">
             <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
@@ -162,13 +195,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <h3 className="text-lg font-black text-white">¡Bienvenidx a la Burbuja!</h3>
               <p className="text-xs text-slate-300 mt-1">
-                Hola <strong className="text-pink-300">{createdUser.name}</strong>, tu cuenta ha sido creada exitosamente en la red de Lara.
+                Hola <strong className="text-pink-300">{createdUser.name}</strong>, tu cuenta ha sido creada en <span className="text-cyan-300 font-semibold">{selectedCollectiveInfo.badge}</span>.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-950/80 border border-pink-500/50 space-y-2">
               <span className="text-[10px] font-black uppercase text-pink-300 tracking-wider block">
-                Tu PIN Personal de Acceso
+                Tu PIN Personal asignado
               </span>
               <div className="flex items-center justify-center gap-2">
                 <span className="font-mono text-2xl font-black text-white tracking-widest bg-pink-950/60 px-3 py-1 rounded-xl border border-pink-500/40">
@@ -184,7 +217,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
               <p className="text-[10px] text-amber-200/90 leading-tight">
-                ⚠️ <strong>Guarda este código.</strong> No usamos contraseñas tradicionales: tu PIN es tu llave para iniciar sesión en cualquier dispositivo.
+                ⚠️ <strong>Guarda tu PIN.</strong> Para entrar a tu cuenta usarás este PIN junto con la contraseña que acabas de crear.
               </p>
             </div>
 
@@ -198,7 +231,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         ) : (
           <>
-            {/* Tabs: Iniciar Sesión con PIN vs Crear Cuenta */}
+            {/* Tabs: Iniciar Sesión vs Crear Cuenta */}
             <div className="flex bg-slate-800/80 rounded-2xl p-1 mb-4">
               <button
                 type="button"
@@ -207,7 +240,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   tab === 'login' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Iniciar Sesión (PIN)
+                Iniciar Sesión
               </button>
               <button
                 type="button"
@@ -216,7 +249,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   tab === 'register' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Crear Cuenta (Invitación)
+                Crear Cuenta
               </button>
             </div>
 
@@ -228,27 +261,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* TAB 1: INICIAR SESIÓN CON PIN PERSONAL (POR DEFECTO) */}
+            {/* TAB 1: INICIAR SESIÓN CON PIN + CONTRASEÑA */}
             {tab === 'login' ? (
-              <form onSubmit={handlePinLogin} className="space-y-4 text-left">
-                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
-                  <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-pink-400" />
-                    <span>Tu PIN Personal</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="BL-XXXXX"
-                    maxLength={10}
-                    value={loginPin}
-                    onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
-                    required
-                    autoFocus
-                    className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-3 px-3 text-center font-mono text-lg tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
-                  />
-                  <span className="text-[10px] text-slate-400 block text-center leading-tight">
-                    Ingresa el PIN aleatorio que se te asignó al crear tu cuenta.
-                  </span>
+              <form onSubmit={handlePinLogin} className="space-y-3.5 text-left">
+                <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5 mb-1">
+                      <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                      <span>Tu PIN Personal</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="B_-XXXXX"
+                      maxLength={10}
+                      value={loginPin}
+                      onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
+                      required
+                      autoFocus
+                      className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2.5 px-3 text-center font-mono text-base tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-slate-300 tracking-wider flex items-center gap-1.5 mb-1">
+                      <Lock className="w-3.5 h-3.5 text-pink-400" />
+                      <span>Contraseña</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showLoginPass ? 'text' : 'password'}
+                        placeholder="Tu contraseña secreta"
+                        value={loginPass}
+                        onChange={(e) => setLoginPass(e.target.value)}
+                        required
+                        className="w-full bg-slate-900 border border-slate-700 focus:border-pink-500 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-white placeholder:text-slate-600 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPass(!showLoginPass)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                      >
+                        {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -259,7 +315,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verificando PIN...</span>
+                      <span>Verificando...</span>
                     </>
                   ) : (
                     <span>Entrar a mi Burbuja</span>
@@ -272,49 +328,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => { setTab('register'); setError(null); }}
                     className="text-xs text-slate-400 hover:text-pink-300 transition-colors"
                   >
-                    ¿Aún no tienes cuenta? <span className="text-pink-400 font-bold underline">Crear cuenta con invitación</span>
+                    ¿Aún no tienes cuenta? <span className="text-pink-400 font-bold underline">Crear cuenta</span>
                   </button>
                 </div>
               </form>
             ) : (
-              /* TAB 2: REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN */
-              <form onSubmit={handleRegister} className="space-y-3 text-left">
-                {/* Nombre o Apodo */}
-                <div>
-                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
-                    Nombre o Apodo
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="¿Cómo te decimos?"
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      required
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 pl-10 pr-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
-                    />
+              /* TAB 2: CREAR CUENTA CON COLECTIVO (BL-, BG-, BB-...), CORREO, CONTRASEÑA E INVITACIÓN */
+              <form onSubmit={handleRegister} className="space-y-2.5 text-left">
+                {/* Nombre y Pronombres en fila compacta */}
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="col-span-3">
+                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                      Nombre o Apodo
+                    </label>
+                    <div className="relative">
+                      <User className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="¿Cómo te decimos?"
+                        value={regName}
+                        onChange={(e) => setRegName(e.target.value)}
+                        required
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 pl-8 pr-2.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                      Pronombres
+                    </label>
+                    <select
+                      value={regPronouns}
+                      onChange={(e) => setRegPronouns(e.target.value)}
+                      className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-2 text-xs text-slate-200 focus:outline-none w-full"
+                    >
+                      <option>Él / Him</option>
+                      <option>Ella / She</option>
+                      <option>Elle / He</option>
+                      <option>Otro</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* Pronombres */}
+                {/* Selector de Colectivo para construir el prefijo del PIN (BL-, BG-, BB-, BT-...) */}
                 <div>
-                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
-                    Pronombres
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-pink-400" />
+                      <span>Colectivo (Prefijo de tu PIN)</span>
+                    </label>
+                    <span className="text-[10px] font-mono font-bold text-pink-400">
+                      {selectedCollectiveInfo.prefix}-XXXXX
+                    </span>
+                  </div>
                   <select
-                    value={regPronouns}
-                    onChange={(e) => setRegPronouns(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-200 focus:outline-none w-full"
+                    value={regCollective}
+                    onChange={(e) => setRegCollective(e.target.value as CollectiveCode)}
+                    className="bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 px-3 text-xs text-slate-200 focus:outline-none w-full"
                   >
-                    <option>Elle / He</option>
-                    <option>Ella / She</option>
-                    <option>Él / Him</option>
-                    <option>Prefiero no decir</option>
+                    {COLLECTIVE_OPTIONS.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label} → PIN {opt.prefix}-XXXXX
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Cédula de Identidad con aviso de Hash de Privacidad */}
+                {/* Cédula de Identidad */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
@@ -331,38 +412,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 px-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none font-mono"
                   />
-                  <span className="text-[9px] text-slate-500 block mt-0.5 leading-tight">
-                    🔒 Tu cédula se cifra en el servidor (ej: <code>V-24***456</code>). Solo se usa para evitar cuentas duplicadas y nunca es visible.
-                  </span>
+                </div>
+
+                {/* Correo Electrónico (para recuperar contraseña) */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Correo Electrónico</span>
+                    <span className="text-[9px] text-slate-400 font-normal">Para recuperar clave</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                    <input
+                      type="email"
+                      placeholder="tucorreo@ejemplo.com"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 pl-8 pr-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Contraseña */}
+                <div>
+                  <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                    Crea tu Contraseña
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                    <input
+                      type={showRegPass ? 'text' : 'password'}
+                      placeholder="Mínimo 4 caracteres"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-pink-500 rounded-xl py-2 pl-8 pr-9 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPass(!showRegPass)}
+                      className="absolute right-3 top-2 text-slate-400 hover:text-white"
+                    >
+                      {showRegPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Código de Invitación */}
-                <div className="p-3 bg-pink-950/20 border border-pink-500/40 rounded-2xl space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
-                      <KeyRound className="w-3.5 h-3.5 text-pink-400" />
-                      <span>Código de Invitación</span>
-                    </label>
-                  </div>
+                <div className="p-2.5 bg-pink-950/20 border border-pink-500/40 rounded-2xl space-y-1">
+                  <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Código de Invitación</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="BL-XXXXX"
+                    placeholder="B_-XXXXX"
                     maxLength={14}
                     value={referralPin}
                     onChange={(e) => setReferralPin(e.target.value.toUpperCase())}
                     required
-                    className="w-full bg-slate-950 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2 px-3 text-center font-mono text-sm tracking-widest text-pink-200 placeholder:text-slate-600 focus:outline-none"
+                    className="w-full bg-slate-950 border border-pink-500/60 focus:border-pink-400 rounded-xl py-1.5 px-3 text-center font-mono text-sm tracking-widest text-pink-200 placeholder:text-slate-600 focus:outline-none"
                   />
-                  <span className="text-[10px] text-slate-400 block">
-                    Emitido por un miembro existente de la red de confianza.
-                  </span>
-                </div>
-
-                <div className="p-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-[10px] text-slate-400 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                  <span>
-                    Al registrarte, el sistema te generará al azar tu propio PIN personal y 3 invitaciones.
-                  </span>
                 </div>
 
                 <button
@@ -380,7 +490,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
 
-                <div className="text-center pt-1">
+                <div className="text-center pt-0.5">
                   <button
                     type="button"
                     onClick={() => { setTab('login'); setError(null); }}

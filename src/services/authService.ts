@@ -2,6 +2,25 @@ import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types';
 
 export const SUPERADMIN_PIN = 'BL-94X7A';
+export const SUPERADMIN_DEFAULT_PASS = 'Admin2026*';
+
+export type CollectiveCode = 'L' | 'G' | 'B' | 'T' | 'I' | 'Q' | 'A' | 'X';
+
+export const COLLECTIVE_OPTIONS: {
+  code: CollectiveCode;
+  prefix: string;
+  label: string;
+  badge: string;
+}[] = [
+  { code: 'L', prefix: 'BL', label: 'L — Lésbica', badge: 'Burbuja Lésbica (BL-)' },
+  { code: 'G', prefix: 'BG', label: 'G — Gay', badge: 'Burbuja Gay (BG-)' },
+  { code: 'B', prefix: 'BB', label: 'B — Bisexual', badge: 'Burbuja Bisexual (BB-)' },
+  { code: 'T', prefix: 'BT', label: 'T — Trans', badge: 'Burbuja Trans (BT-)' },
+  { code: 'I', prefix: 'BI', label: 'I — Intersexual', badge: 'Burbuja Intersexual (BI-)' },
+  { code: 'Q', prefix: 'BQ', label: 'Q — Queer', badge: 'Burbuja Queer (BQ-)' },
+  { code: 'A', prefix: 'BA', label: 'A — Asexual / Arrománticx', badge: 'Burbuja Asexual (BA-)' },
+  { code: 'X', prefix: 'BX', label: '+ — No Binarie / +', badge: 'Burbuja Diversa (BX-)' }
+];
 
 export const SUPERADMIN_PROFILE: UserProfile = {
   id: 'superadmin-root',
@@ -22,12 +41,12 @@ export const SUPERADMIN_PROFILE: UserProfile = {
   city: 'Barquisimeto'
 };
 
-// Normaliza cualquier entrada de PIN (ej: "BL94X7A", "bl-94x7a" o "94X7A" -> "BL-94X7A")
+// Normaliza cualquier entrada de PIN (ej: "BG8291K", "bl94x7a" -> "BG-8291K", "BL-94X7A")
 export function normalizePin(raw: string): string {
   const alnum = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!alnum) return '';
-  if (alnum.startsWith('BL') && alnum.length > 2) {
-    return `BL-${alnum.slice(2)}`;
+  if (/^B[LGBTIQAXS][A-Z0-9]{4,6}$/.test(alnum)) {
+    return `${alnum.slice(0, 2)}-${alnum.slice(2)}`;
   }
   if (alnum.length === 5) {
     return `BL-${alnum}`;
@@ -44,15 +63,26 @@ export function hashCedula(cedulaRaw: string): string {
   return `${prefix}***${suffix}`;
 }
 
-// Genera un PIN aleatorio único en formato BL-XXXXX (ej: BL-8291K)
-export function generateRandomPin(): string {
+// Hash ligero de contraseña para comparación segura
+export function hashPassword(password: string): string {
+  let hash = 5381;
+  const str = `burbuja_salt_${password}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return `pw_${(hash >>> 0).toString(16)}`;
+}
+
+// Genera un PIN aleatorio único según el colectivo elegido (ej: BL-XXXXX, BG-XXXXX, BB-XXXXX)
+export function generateRandomPin(collective: CollectiveCode = 'L'): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let randomCode = '';
   for (let i = 0; i < 5; i++) {
     randomCode += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  const candidate = `BL-${randomCode}`;
-  return candidate === SUPERADMIN_PIN ? generateRandomPin() : candidate;
+  const prefix = `B${collective}`;
+  const candidate = `${prefix}-${randomCode}`;
+  return candidate === SUPERADMIN_PIN ? generateRandomPin(collective) : candidate;
 }
 
 export interface RegisterParams {
@@ -60,6 +90,9 @@ export interface RegisterParams {
   cedula: string;
   name: string;
   pronouns: string;
+  collective: CollectiveCode;
+  email: string;
+  password: string;
   avatar?: string;
 }
 
@@ -69,21 +102,25 @@ export const authService = {
     return user.id === 'superadmin-root' || user.pin === SUPERADMIN_PIN;
   },
 
-  // REGISTRO CON CÉDULA HASH Y CÓDIGO DE INVITACIÓN
+  // REGISTRO CON CÉDULA HASH, COLECTIVO (BL-, BG-, BB-...), CORREO, CONTRASEÑA Y CÓDIGO DE INVITACIÓN
   async register(params: RegisterParams): Promise<UserProfile> {
     const cleanReferral = normalizePin(params.referralPin);
     const cleanCedula = params.cedula.trim().toUpperCase();
+    const cleanEmail = params.email.trim().toLowerCase();
     const cedulaHashVal = hashCedula(cleanCedula);
+    const passwordHashVal = hashPassword(params.password);
 
     // 1. Verificar si la cédula ya está registrada en Supabase o registro local
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
-      .eq('cedula_hash', cedulaHashVal)
+      .ilike('cedula_hash', `${cedulaHashVal}%`)
       .maybeSingle();
 
     const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
-    const existingLocal = localDirectory.find((p) => p.cedula_hash === cedulaHashVal);
+    const existingLocal = localDirectory.find(
+      (p) => p.cedula_only === cedulaHashVal || (p.cedula_hash && p.cedula_hash.startsWith(cedulaHashVal))
+    );
 
     if (existingUser || existingLocal) {
       throw new Error('Este número de cédula ya tiene una cuenta activa en la Burbuja.');
@@ -127,8 +164,8 @@ export const authService = {
       }
     }
 
-    // 3. Generar PIN al azar único para este nuevo usuario
-    let newPin = generateRandomPin();
+    // 3. Generar PIN al azar con el prefijo del colectivo (BL-, BG-, BB-, BT-, etc.)
+    let newPin = generateRandomPin(params.collective || 'L');
     let attempts = 0;
     while (attempts < 5) {
       const { data: collision } = await supabase
@@ -137,7 +174,7 @@ export const authService = {
         .eq('pin', newPin)
         .maybeSingle();
       if (!collision && !localDirectory.some((p) => p.pin === newPin)) break;
-      newPin = generateRandomPin();
+      newPin = generateRandomPin(params.collective || 'L');
       attempts++;
     }
 
@@ -150,13 +187,17 @@ export const authService = {
     ];
     const chosenAvatar = params.avatar || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
 
+    // Guardamos el hash de contraseña y correo tanto en local como embebido en cedula_hash (ej: V12***345::pw_xxx::correo@mail.com)
+    // para que funcione en Supabase inmediatamente sin requerir columnas extra
+    const combinedAuthHash = `${cedulaHashVal}::${passwordHashVal}::${cleanEmail}`;
+
     const profileData = {
       id: `u-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: params.name.trim(),
       pronouns: params.pronouns || 'Elle / He',
       avatar: chosenAvatar,
       pin: newPin,
-      cedula_hash: cedulaHashVal,
+      cedula_hash: combinedAuthHash,
       referred_by_pin: inviterPin,
       referred_by_name: inviterName,
       status: 'disponible',
@@ -180,7 +221,12 @@ export const authService = {
     }
 
     try {
-      localDirectory.push(profileData);
+      localDirectory.push({
+        ...profileData,
+        cedula_only: cedulaHashVal,
+        password_hash: passwordHashVal,
+        email: cleanEmail
+      });
       localStorage.setItem('burbuja_local_profiles', JSON.stringify(localDirectory));
     } catch {}
 
@@ -210,19 +256,27 @@ export const authService = {
     return userProfile;
   },
 
-  // LOGIN POR PIN (Soporta tanto el PIN del Superadmin BL-94X7A como el PIN personal del usuario)
-  async loginWithPin(pinInput: string): Promise<UserProfile> {
+  // LOGIN POR PIN + CONTRASEÑA
+  async loginWithPin(pinInput: string, passwordInput: string): Promise<UserProfile> {
     const cleanPin = normalizePin(pinInput);
+    const cleanPass = passwordInput.trim();
+
+    if (!cleanPass) {
+      throw new Error('Por favor ingresa tu contraseña.');
+    }
 
     // 1. Verificar si es la cuenta exclusiva del Superadmin / Fundador
     if (cleanPin === SUPERADMIN_PIN) {
+      if (cleanPass !== SUPERADMIN_DEFAULT_PASS) {
+        throw new Error('Contraseña de Superadmin incorrecta.');
+      }
       try {
         localStorage.setItem('burbuja_user', JSON.stringify(SUPERADMIN_PROFILE));
       } catch {}
       return SUPERADMIN_PROFILE;
     }
 
-    // 2. Buscar cuenta de usuario normal en Supabase
+    // 2. Buscar cuenta de usuario normal en Supabase o almacenamiento local
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -239,6 +293,17 @@ export const authService = {
 
     if (found.is_enabled === false) {
       throw new Error('Esta cuenta ha sido inhabilitada por moderación.');
+    }
+
+    // Verificar contraseña
+    const inputPassHash = hashPassword(cleanPass);
+    const storedCedulaField: string = found.cedula_hash || '';
+    const storedPassHash =
+      found.password_hash ||
+      (storedCedulaField.includes('::') ? storedCedulaField.split('::')[1] : null);
+
+    if (storedPassHash && storedPassHash !== inputPassHash) {
+      throw new Error('Contraseña incorrecta para este PIN.');
     }
 
     const userProfile: UserProfile = {

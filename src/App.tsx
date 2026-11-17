@@ -30,6 +30,8 @@ import { ExploreCommunitiesModal } from './components/ExploreCommunitiesModal';
 import { playMsnOnlineChime } from './utils/sound';
 import { authService } from './services/authService';
 import { Logo } from './components/Logo';
+import { ApkDownloadModal } from './components/ApkDownloadModal';
+import { Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const guestUser: UserProfile = {
@@ -131,6 +133,7 @@ export function App() {
   const [sentRadarPins, setSentRadarPins] = useState<string[]>([]);
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(managedUsersMock);
   const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(globalBroadcastsMock);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   // My stories state
   const [myStories, setMyStories] = useState<{
@@ -880,12 +883,23 @@ export function App() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsAuthOpen(true)}
-              className="w-full max-w-xs py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white font-bold text-sm shadow-xl shadow-pink-600/25 active:scale-95 transition-all"
-            >
-              Iniciar Sesión / Crear Cuenta
-            </button>
+            <div className="space-y-2.5 max-w-xs mx-auto">
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white font-bold text-sm shadow-xl shadow-pink-600/25 active:scale-95 transition-all"
+              >
+                Iniciar Sesión / Crear Cuenta
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsApkModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Descargar App para Android (.APK)</span>
+              </button>
+            </div>
           </div>
         ) : isDetoxActive ? (
           <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
@@ -1050,6 +1064,12 @@ export function App() {
           handleSelectCommunity(comm);
           setActiveTab('comunidades');
         }}
+      />
+
+      {/* Modal de Descarga de APK Android */}
+      <ApkDownloadModal
+        isOpen={isApkModalOpen}
+        onClose={() => setIsApkModalOpen(false)}
       />
     </div>
   );

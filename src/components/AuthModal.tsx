@@ -10,11 +10,14 @@ import {
   Copy,
   Check,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { Logo } from './Logo';
 import type { UserProfile } from '../types';
 import { authService } from '../services/authService';
+import { ApkDownloadModal } from './ApkDownloadModal';
 import confetti from 'canvas-confetti';
 
 interface AuthModalProps {
@@ -46,6 +49,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [createdUser, setCreatedUser] = useState<UserProfile | null>(null);
   const [copiedPin, setCopiedPin] = useState(false);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -394,8 +398,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
               </form>
             )}
+
+            {/* Botón Descargar APK para Android */}
+            <div className="mt-4 pt-3 border-t border-slate-800/80">
+              <button
+                type="button"
+                onClick={() => setIsApkModalOpen(true)}
+                className="w-full py-2.5 px-3 rounded-2xl bg-slate-950/90 hover:bg-slate-800/90 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white transition-all flex items-center justify-between group active:scale-95 shadow-sm"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                    <Smartphone className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[11px] font-bold text-slate-200 block group-hover:text-emerald-300 transition-colors">
+                      Descargar App Android
+                    </span>
+                    <span className="text-[9px] text-slate-500 block">
+                      Instalador directo .APK • v1.0
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-1 rounded-lg">
+                  <Download className="w-3 h-3" />
+                  <span>APK</span>
+                </div>
+              </button>
+            </div>
           </>
         )}
+
+        <ApkDownloadModal
+          isOpen={isApkModalOpen}
+          onClose={() => setIsApkModalOpen(false)}
+        />
       </div>
     </div>
   );

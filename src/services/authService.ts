@@ -22,6 +22,19 @@ export const SUPERADMIN_PROFILE: UserProfile = {
   city: 'Barquisimeto'
 };
 
+// Normaliza cualquier entrada de PIN (ej: "BL94X7A", "bl-94x7a" o "94X7A" -> "BL-94X7A")
+export function normalizePin(raw: string): string {
+  const alnum = raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!alnum) return '';
+  if (alnum.startsWith('BL') && alnum.length > 2) {
+    return `BL-${alnum.slice(2)}`;
+  }
+  if (alnum.length === 5) {
+    return `BL-${alnum}`;
+  }
+  return raw.trim().toUpperCase();
+}
+
 // Helper para calcular un hash seguro y enmascarado de cédula
 export function hashCedula(cedulaRaw: string): string {
   const clean = cedulaRaw.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -58,7 +71,7 @@ export const authService = {
 
   // REGISTRO CON CÉDULA HASH Y CÓDIGO DE INVITACIÓN
   async register(params: RegisterParams): Promise<UserProfile> {
-    const cleanReferral = params.referralPin.trim().toUpperCase();
+    const cleanReferral = normalizePin(params.referralPin);
     const cleanCedula = params.cedula.trim().toUpperCase();
     const cedulaHashVal = hashCedula(cleanCedula);
 
@@ -199,7 +212,7 @@ export const authService = {
 
   // LOGIN POR PIN (Soporta tanto el PIN del Superadmin BL-94X7A como el PIN personal del usuario)
   async loginWithPin(pinInput: string): Promise<UserProfile> {
-    const cleanPin = pinInput.trim().toUpperCase();
+    const cleanPin = normalizePin(pinInput);
 
     // 1. Verificar si es la cuenta exclusiva del Superadmin / Fundador
     if (cleanPin === SUPERADMIN_PIN) {

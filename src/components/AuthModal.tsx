@@ -346,7 +346,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <input
                     type="text"
-                    placeholder="Ej: BL-7K9A2"
+                    placeholder="BL-XXXXX"
                     maxLength={14}
                     value={referralPin}
                     onChange={(e) => setReferralPin(e.target.value.toUpperCase())}
@@ -373,10 +373,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Registrando en la Burbuja...</span>
+                      <span>Creando cuenta...</span>
                     </>
                   ) : (
-                    <span>Crear Mi Cuenta & Recibir PIN</span>
+                    <span>Crear cuenta</span>
                   )}
                 </button>
 

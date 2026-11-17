@@ -30,7 +30,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLoginSuccess,
   canClose = false
 }) => {
-  const [tab, setTab] = useState<'login' | 'register'>('register');
+  const [tab, setTab] = useState<'login' | 'register'>('login');
   
   // Login form state
   const [loginPin, setLoginPin] = useState('');
@@ -194,23 +194,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         ) : (
           <>
-            {/* Tabs: Registrarme vs Iniciar Sesión con PIN */}
+            {/* Tabs: Iniciar Sesión con PIN vs Crear Cuenta */}
             <div className="flex bg-slate-800/80 rounded-2xl p-1 mb-4">
               <button
+                type="button"
+                onClick={() => { setTab('login'); setError(null); }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  tab === 'login' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Iniciar Sesión (PIN)
+              </button>
+              <button
+                type="button"
                 onClick={() => { setTab('register'); setError(null); }}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
                   tab === 'register' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Crear Cuenta (Invitación)
-              </button>
-              <button
-                onClick={() => { setTab('login'); setError(null); }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                  tab === 'login' ? 'bg-pink-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Entrar con mi PIN
               </button>
             </div>
 
@@ -222,8 +224,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* TAB 1: REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN */}
-            {tab === 'register' ? (
+            {/* TAB 1: INICIAR SESIÓN CON PIN PERSONAL (POR DEFECTO) */}
+            {tab === 'login' ? (
+              <form onSubmit={handlePinLogin} className="space-y-4 text-left">
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+                  <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Tu PIN Personal</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="BL-XXXXX"
+                    maxLength={10}
+                    value={loginPin}
+                    onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
+                    required
+                    autoFocus
+                    className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-3 px-3 text-center font-mono text-lg tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400 block text-center leading-tight">
+                    Ingresa el PIN aleatorio que se te asignó al crear tu cuenta.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verificando PIN...</span>
+                    </>
+                  ) : (
+                    <span>Entrar a mi Burbuja</span>
+                  )}
+                </button>
+
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setTab('register'); setError(null); }}
+                    className="text-xs text-slate-400 hover:text-pink-300 transition-colors"
+                  >
+                    ¿Aún no tienes cuenta? <span className="text-pink-400 font-bold underline">Crear cuenta con invitación</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* TAB 2: REGISTRO CON CÉDULA Y CÓDIGO DE INVITACIÓN */
               <form onSubmit={handleRegister} className="space-y-3 text-left">
                 {/* Nombre o Apodo */}
                 <div>
@@ -332,43 +382,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <span>Crear Mi Cuenta & Recibir PIN</span>
                   )}
                 </button>
-              </form>
-            ) : (
-              /* TAB 2: INICIAR SESIÓN CON PIN PERSONAL */
-              <form onSubmit={handlePinLogin} className="space-y-4 text-left">
-                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
-                  <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-pink-400" />
-                    <span>Tu PIN Personal</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="BL-XXXXX"
-                    maxLength={10}
-                    value={loginPin}
-                    onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
-                    required
-                    className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-3 px-3 text-center font-mono text-lg tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
-                  />
-                  <span className="text-[10px] text-slate-400 block text-center leading-tight">
-                    Ingresa el PIN aleatorio que se te asignó al crear tu cuenta.
-                  </span>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Verificando PIN...</span>
-                    </>
-                  ) : (
-                    <span>Entrar a mi Burbuja</span>
-                  )}
-                </button>
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => { setTab('login'); setError(null); }}
+                    className="text-xs text-slate-400 hover:text-pink-300 transition-colors"
+                  >
+                    ¿Ya tienes tu PIN? <span className="text-pink-400 font-bold underline">Iniciar sesión</span>
+                  </button>
+                </div>
               </form>
             )}
           </>

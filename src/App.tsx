@@ -297,6 +297,117 @@ export function App() {
     });
   }, [isLoggedIn, isSuperadminOpen]);
 
+  // Sincronizar solicitudes de conexión y contactos para el usuario activo
+  useEffect(() => {
+    if (!currentUser?.pin) return;
+
+    // 1. Cargar contactos guardados localmente para este usuario
+    try {
+      const savedContacts = localStorage.getItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`);
+      if (savedContacts) {
+        const parsed: Contact[] = JSON.parse(savedContacts);
+        if (parsed.length > 0) {
+          setContacts(parsed);
+        }
+      }
+    } catch {}
+
+    // 2. Cargar solicitudes pendientes de conectar burbujas dirigidas a este usuario
+    const loadRequests = async () => {
+      const localKey = `burbuja_requests_${currentUser.pin.toUpperCase()}`;
+      let localReqs: BubbleConnectionRequest[] = [];
+      try {
+        localReqs = JSON.parse(localStorage.getItem(localKey) || '[]');
+      } catch {}
+
+      try {
+        const { data, error } = await supabase
+          .from('connection_requests')
+          .select('*')
+          .eq('to_user_pin', currentUser.pin.toUpperCase())
+          .eq('status', 'pendiente')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const remoteReqs: BubbleConnectionRequest[] = data.map((d: any) => ({
+            id: d.id,
+            fromUserId: d.from_user_id,
+            fromUserName: d.from_user_name,
+            fromUserAvatar: d.from_user_avatar || '/logo.svg',
+            fromUserPronouns: d.from_user_pronouns || 'Comunidad',
+            fromUserPin: d.from_user_pin,
+            introMessage: d.intro_message || '¡Hola! Me gustaría conectar nuestras burbujas 🫧',
+            timestamp: d.created_at ? new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Reciente',
+            distanceKm: d.distance_km,
+            city: d.city,
+            song: d.song
+          }));
+
+          const merged = [...remoteReqs];
+          localReqs.forEach(lr => {
+            if (!merged.some(m => m.id === lr.id || m.fromUserPin === lr.fromUserPin)) {
+              merged.push(lr);
+            }
+          });
+          setBubbleRequests(merged);
+          return;
+        }
+      } catch (err) {
+        console.warn('Error al cargar solicitudes de Supabase:', err);
+      }
+
+      setBubbleRequests(localReqs);
+    };
+
+    loadRequests();
+
+    // 3. Suscripción en tiempo real a solicitudes entrantes
+    const channel = supabase
+      .channel(`requests_${currentUser.pin.toUpperCase()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'connection_requests',
+          filter: `to_user_pin=eq.${currentUser.pin.toUpperCase()}`
+        },
+        (payload: any) => {
+          const d = payload.new;
+          if (d && d.status === 'pendiente') {
+            const incoming: BubbleConnectionRequest = {
+              id: d.id,
+              fromUserId: d.from_user_id,
+              fromUserName: d.from_user_name,
+              fromUserAvatar: d.from_user_avatar || '/logo.svg',
+              fromUserPronouns: d.from_user_pronouns || 'Comunidad',
+              fromUserPin: d.from_user_pin,
+              introMessage: d.intro_message || '¡Hola! Me gustaría conectar nuestras burbujas 🫧',
+              timestamp: 'Ahora',
+              distanceKm: d.distance_km,
+              city: d.city,
+              song: d.song
+            };
+            setBubbleRequests(prev => {
+              if (prev.some(r => r.id === incoming.id || r.fromUserPin === incoming.fromUserPin)) return prev;
+              return [incoming, ...prev];
+            });
+            triggerMsnToast({
+              id: `toast-incoming-req-${Date.now()}`,
+              title: '¡Nueva Solicitud para Conectar! 🫧',
+              message: `${incoming.fromUserName} (${incoming.fromUserPin}) quiere conectar contigo.`,
+              avatar: incoming.fromUserAvatar
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.pin]);
+
   // MSN Toasts state
   const [toasts, setToasts] = useState<MSNToast[]>([]);
   const [bufferedToastsCount, setBufferedToastsCount] = useState(0);
@@ -386,7 +497,13 @@ export function App() {
   const handleAddContact = (newContact: Contact) => {
     setContacts(prev => {
       if (prev.some(c => c.pin === newContact.pin)) return prev;
-      return [newContact, ...prev];
+      const updated = [newContact, ...prev];
+      if (currentUser?.pin) {
+        try {
+          localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
     });
   };
 
@@ -891,8 +1008,56 @@ export function App() {
     });
   };
 
-  const handleSendConnectionRequest = (target: Contact, _introMessage: string) => {
+  const handleSendConnectionRequest = (target: Contact, introMessage: string) => {
     setSentRadarPins(prev => [...prev, target.pin]);
+
+    const newReq: BubbleConnectionRequest = {
+      id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      fromUserId: currentUser.id,
+      fromUserName: currentUser.name,
+      fromUserAvatar: currentUser.avatar || '/logo.svg',
+      fromUserPronouns: currentUser.pronouns || 'Comunidad',
+      fromUserPin: currentUser.pin,
+      introMessage: introMessage?.trim() || '¡Hola! Me gustaría conectar nuestras burbujas en Burbuja LGBTIQA+ 🫧',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      distanceKm: target.distanceKm || 0.5,
+      city: currentUser.city || 'Barquisimeto & Lara',
+      song: currentUser.currentSong || ''
+    };
+
+    // 1. Guardar en Supabase tabla connection_requests
+    supabase
+      .from('connection_requests')
+      .insert([{
+        id: newReq.id,
+        from_user_id: newReq.fromUserId,
+        from_user_name: newReq.fromUserName,
+        from_user_avatar: newReq.fromUserAvatar,
+        from_user_pronouns: newReq.fromUserPronouns,
+        from_user_pin: newReq.fromUserPin,
+        to_user_pin: target.pin.toUpperCase(),
+        intro_message: newReq.introMessage,
+        distance_km: newReq.distanceKm,
+        city: newReq.city,
+        song: newReq.song,
+        status: 'pendiente'
+      }])
+      .then(({ error }) => {
+        if (error) console.warn('Supabase insert connection request error:', error);
+      });
+
+    // 2. Persistir en localStorage para el usuario destinatario (sincronización local instantánea)
+    try {
+      const storageKey = `burbuja_requests_${target.pin.toUpperCase()}`;
+      const existing: BubbleConnectionRequest[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!existing.some(r => r.fromUserPin === newReq.fromUserPin)) {
+        existing.unshift(newReq);
+        localStorage.setItem(storageKey, JSON.stringify(existing));
+      }
+    } catch (e) {
+      console.warn('Error al guardar solicitud localmente:', e);
+    }
+
     triggerMsnToast({
       id: `toast-conn-${Date.now()}`,
       title: '¡Solicitud para Conectar Burbujas enviada! 🫧',
@@ -917,8 +1082,55 @@ export function App() {
       stories: []
     };
 
-    setContacts(prev => [newContact, ...prev]);
+    setContacts(prev => {
+      if (prev.some(c => c.pin === newContact.pin)) return prev;
+      const updated = [newContact, ...prev];
+      if (currentUser?.pin) {
+        try {
+          localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
     setBubbleRequests(prev => prev.filter(r => r.id !== req.id));
+
+    // Actualizar estado en Supabase
+    supabase
+      .from('connection_requests')
+      .update({ status: 'aceptada' })
+      .eq('id', req.id)
+      .then(() => {});
+
+    // Eliminar de localStorage del usuario receptor
+    try {
+      const localKey = `burbuja_requests_${currentUser.pin.toUpperCase()}`;
+      const existing: BubbleConnectionRequest[] = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const filtered = existing.filter(r => r.id !== req.id && r.fromUserPin !== req.fromUserPin);
+      localStorage.setItem(localKey, JSON.stringify(filtered));
+    } catch {}
+
+    // Agregar recíprocamente al solicitante en su lista de contactos guardada
+    try {
+      const senderKey = `burbuja_contacts_${req.fromUserPin.toUpperCase()}`;
+      const senderContacts: Contact[] = JSON.parse(localStorage.getItem(senderKey) || '[]');
+      if (!senderContacts.some(c => c.pin === currentUser.pin)) {
+        senderContacts.unshift({
+          id: currentUser.id,
+          name: currentUser.name,
+          pronouns: currentUser.pronouns,
+          avatar: currentUser.avatar,
+          pin: currentUser.pin,
+          status: currentUser.status,
+          personalMessage: currentUser.personalMessage,
+          currentSong: currentUser.currentSong,
+          city: currentUser.city,
+          allowWhatsAppBridge: currentUser.allowWhatsAppBridge,
+          stories: []
+        });
+        localStorage.setItem(senderKey, JSON.stringify(senderContacts));
+      }
+    } catch {}
 
     confetti({
       particleCount: 50,
@@ -936,6 +1148,19 @@ export function App() {
 
   const handleRejectBubbleRequest = (reqId: string) => {
     setBubbleRequests(prev => prev.filter(r => r.id !== reqId));
+    supabase
+      .from('connection_requests')
+      .update({ status: 'rechazada' })
+      .eq('id', reqId)
+      .then(() => {});
+
+    try {
+      const localKey = `burbuja_requests_${currentUser.pin.toUpperCase()}`;
+      const existing: BubbleConnectionRequest[] = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const filtered = existing.filter(r => r.id !== reqId);
+      localStorage.setItem(localKey, JSON.stringify(filtered));
+    } catch {}
+
     triggerMsnToast({
       id: `toast-reject-bubble-${Date.now()}`,
       title: 'Solicitud descartada',

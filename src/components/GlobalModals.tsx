@@ -185,6 +185,10 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
         onClose={onCloseAddContact}
         onAddContact={onAddContact}
         availableContacts={availableContacts}
+        currentUser={currentUser}
+        contacts={contacts}
+        onSendConnectionRequest={onSendConnectionRequest}
+        isAdmin={isAdmin}
       />
 
       {/* 24h Story Viewer */}

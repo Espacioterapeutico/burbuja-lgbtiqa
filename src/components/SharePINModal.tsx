@@ -71,22 +71,30 @@ export const SharePINModal: React.FC<SharePINModalProps> = ({ user, isOpen, onCl
           />
         </div>
 
-        {/* PIN Display with Copy Button */}
-        <div className="flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-2xl p-3 mb-4">
+        {/* PIN Display with Copy Button (Alto Contraste Permanente) */}
+        <div 
+          className="flex items-center justify-between rounded-2xl p-3.5 mb-4 border-2 shadow-lg"
+          style={{ backgroundColor: '#090d16', borderColor: '#334155' }}
+        >
           <div className="text-left pl-1">
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest block font-bold">Tu PIN Exclusivo</span>
-            <span className="text-lg font-mono font-black tracking-widest text-transparent bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-300 bg-clip-text">
+            <span className="text-[10px] text-pink-400 uppercase tracking-widest block font-bold">
+              Tu PIN Exclusivo
+            </span>
+            <span 
+              className="text-xl font-mono font-black tracking-widest block select-all"
+              style={{ color: '#ffffff', textShadow: '0 0 10px rgba(236,72,153,0.3)' }}
+            >
               {user.pin}
             </span>
           </div>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors border border-slate-700"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-md cursor-pointer"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-300">¡Copiado!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="text-emerald-200">¡Copiado!</span>
               </>
             ) : (
               <>

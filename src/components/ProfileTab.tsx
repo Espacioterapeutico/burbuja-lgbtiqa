@@ -260,24 +260,36 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               </p>
             </div>
 
-            {/* Caja de PIN Personal */}
-            <div className={`inline-flex items-center gap-2 p-2 rounded-2xl border ${
-              theme === 'light'
-                ? 'bg-slate-100/80 border-slate-200'
-                : 'bg-slate-950/80 border-slate-800'
-            }`}>
-              <div className="text-left px-1">
-                <span className="text-[9px] font-black uppercase text-pink-500 dark:text-pink-400 tracking-wider block">
+            {/* Caja de PIN Personal (Siempre de Alto Contraste y 100% legible) */}
+            <div 
+              className={`inline-flex items-center gap-3 px-3.5 py-2 rounded-2xl border-2 transition-all shadow-md ${
+                theme === 'light'
+                  ? 'border-slate-800'
+                  : 'border-pink-500/40'
+              }`}
+              style={{
+                backgroundColor: '#090d16',
+                borderColor: theme === 'light' ? '#1e293b' : '#ec489955'
+              }}
+            >
+              <div className="text-left px-0.5">
+                <span 
+                  className="text-[9px] font-black uppercase tracking-wider block"
+                  style={{ color: '#f472b6' }}
+                >
                   Tu PIN Personal
                 </span>
-                <span className="font-mono text-base font-black text-slate-900 dark:text-white tracking-widest">
+                <span 
+                  className="font-mono text-base font-black tracking-widest block select-all"
+                  style={{ color: '#ffffff', textShadow: '0 0 10px rgba(236,72,153,0.3)' }}
+                >
                   {currentUser.pin}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleCopyPin}
-                className="p-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white transition-all active:scale-95 shadow-sm"
+                className="p-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white transition-all active:scale-95 shadow-md flex items-center justify-center cursor-pointer ml-1"
                 title="Copiar mi PIN"
               >
                 {copiedPin ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}

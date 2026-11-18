@@ -461,11 +461,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               </div>
 
-              {/* 6. PIN ALFANUMÉRICO (INMUTABLE DE SEGURIDAD) */}
-              <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between">
+              {/* 6. PIN ALFANUMÉRICO (INMUTABLE DE SEGURIDAD - Alto Contraste) */}
+              <div 
+                className="rounded-2xl p-3.5 flex items-center justify-between border-2 shadow-md"
+                style={{ backgroundColor: '#090d16', borderColor: '#334155' }}
+              >
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Tu PIN Alfanumérico</span>
-                  <div className="text-lg font-mono font-black text-transparent bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-300 bg-clip-text tracking-widest">
+                  <span className="text-[10px] uppercase font-bold tracking-wider block text-pink-400">
+                    Tu PIN Alfanumérico
+                  </span>
+                  <div 
+                    className="text-lg font-mono font-black tracking-widest select-all"
+                    style={{ color: '#ffffff', textShadow: '0 0 10px rgba(236,72,153,0.3)' }}
+                  >
                     {currentUser.pin}
                   </div>
                 </div>
@@ -473,9 +481,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <button
                   type="button"
                   onClick={onOpenSharePIN}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold transition-transform active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold transition-transform active:scale-95 shadow-md"
                 >
-                  <QrCode className="w-3.5 h-3.5 text-pink-400" />
+                  <QrCode className="w-3.5 h-3.5 text-white" />
                   <span>Ver QR</span>
                 </button>
               </div>

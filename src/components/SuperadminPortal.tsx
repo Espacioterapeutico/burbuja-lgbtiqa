@@ -135,9 +135,9 @@ export const SuperadminPortal: React.FC<SuperadminPortalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 w-full bg-slate-950 flex flex-col overflow-y-auto overflow-x-hidden animate-in fade-in duration-200 text-left">
-      {/* 1. Bloque Superior Fijo (Header + Pestañas, respetando barra de estado del teléfono) */}
+      {/* 1. Bloque Superior Fijo (Header + Pestañas, respetando barra de estado y notch del teléfono) */}
       <div className="sticky top-0 z-30 bg-slate-900 border-b border-slate-800 shadow-md">
-        <header className="border-b border-slate-800/80 px-4 sm:px-6 pt-10 pb-3 sm:py-3.5 flex items-center justify-between gap-2">
+        <header className="border-b border-slate-800/80 px-4 sm:px-6 pt-14 sm:pt-4 pb-3 sm:py-3.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="p-2 rounded-2xl bg-purple-950/80 border border-purple-700/60 text-purple-300 shadow-md shrink-0">
               <ShieldCheck className="w-5 h-5 text-purple-400" />

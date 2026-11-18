@@ -64,14 +64,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // LOGIN POR PIN + CONTRASEÑA
+  // LOGIN POR PIN O CÉDULA + CONTRASEÑA
   const handlePinLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const cleanPin = loginPin.trim().toUpperCase();
+    const cleanIdentifier = loginPin.trim().toUpperCase();
 
-    if (!cleanPin) {
-      setError('Por favor introduce tu PIN.');
+    if (!cleanIdentifier) {
+      setError('Por favor introduce tu PIN o Cédula.');
       return;
     }
 
@@ -82,7 +82,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsLoading(true);
     try {
-      const user = await authService.loginWithPin(cleanPin, loginPass);
+      const user = await authService.loginWithPin(cleanIdentifier, loginPass);
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       onLoginSuccess(user);
       onClose?.();
@@ -164,15 +164,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-slate-900 sm:bg-black/90 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full min-h-dvh sm:min-h-0 sm:max-w-sm sm:my-auto rounded-none sm:rounded-3xl bg-slate-900 border-0 sm:border border-slate-700/80 pt-11 pb-8 px-5 sm:p-6 shadow-2xl text-center flex flex-col justify-center overflow-x-hidden">
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-slate-950 sm:bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full min-h-dvh sm:min-h-0 sm:max-w-md sm:my-auto rounded-none sm:rounded-3xl bg-slate-900 border-0 sm:border border-slate-800/80 pt-14 pb-8 px-5 sm:p-7 shadow-2xl text-center flex flex-col justify-center overflow-x-hidden">
         {/* Glow de fondo */}
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 blur-3xl pointer-events-none rounded-full" />
 
         {canClose && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-9 sm:top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 hover:bg-slate-800 transition-colors"
+            className="absolute top-12 sm:top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/80 hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -259,24 +259,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* TAB 1: INICIAR SESIÓN CON PIN + CONTRASEÑA */}
+            {/* TAB 1: INICIAR SESIÓN CON PIN O CÉDULA + CONTRASEÑA */}
             {tab === 'login' ? (
               <form onSubmit={handlePinLogin} className="space-y-3.5 text-left">
                 <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
                   <div>
-                    <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center gap-1.5 mb-1">
-                      <KeyRound className="w-3.5 h-3.5 text-pink-400" />
-                      <span>Tu PIN Personal</span>
+                    <label className="text-[10px] font-black uppercase text-pink-300 tracking-wider flex items-center justify-between mb-1">
+                      <span className="flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Tu PIN o Cédula</span>
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-normal">PIN o Cédula V-...</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="B_-XXXXX"
-                      maxLength={10}
+                      placeholder="Ej: BL-94X7A o V-24123456"
+                      maxLength={18}
                       value={loginPin}
                       onChange={(e) => setLoginPin(e.target.value.toUpperCase())}
                       required
                       autoFocus
-                      className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2.5 px-3 text-center font-mono text-base tracking-widest text-white placeholder:text-slate-600 focus:outline-none"
+                      className="w-full bg-slate-900 border border-pink-500/60 focus:border-pink-400 rounded-xl py-2.5 px-3 text-center font-mono text-sm tracking-wide text-white placeholder:text-slate-500 focus:outline-none"
                     />
                   </div>
 

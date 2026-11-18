@@ -12,14 +12,14 @@ export const COLLECTIVE_OPTIONS: {
   label: string;
   badge: string;
 }[] = [
-  { code: 'L', prefix: 'BL', label: 'L — Lésbica', badge: 'Burbuja Lésbica (BL-)' },
-  { code: 'G', prefix: 'BG', label: 'G — Gay', badge: 'Burbuja Gay (BG-)' },
-  { code: 'B', prefix: 'BB', label: 'B — Bisexual', badge: 'Burbuja Bisexual (BB-)' },
-  { code: 'T', prefix: 'BT', label: 'T — Trans', badge: 'Burbuja Trans (BT-)' },
-  { code: 'I', prefix: 'BI', label: 'I — Intersexual', badge: 'Burbuja Intersexual (BI-)' },
-  { code: 'Q', prefix: 'BQ', label: 'Q — Queer', badge: 'Burbuja Queer (BQ-)' },
-  { code: 'A', prefix: 'BA', label: 'A — Asexual / Arrománticx', badge: 'Burbuja Asexual (BA-)' },
-  { code: 'X', prefix: 'BX', label: '+ — No Binarie / +', badge: 'Burbuja Diversa (BX-)' }
+  { code: 'L', prefix: 'BL', label: 'L — Lésbica / Lesbiana', badge: 'Lésbica' },
+  { code: 'G', prefix: 'BG', label: 'G — Gay', badge: 'Gay' },
+  { code: 'B', prefix: 'BB', label: 'B — Bisexual', badge: 'Bisexual' },
+  { code: 'T', prefix: 'BT', label: 'T — Trans / Travesti', badge: 'Trans' },
+  { code: 'I', prefix: 'BI', label: 'I — Intersexual', badge: 'Intersexual' },
+  { code: 'Q', prefix: 'BQ', label: 'Q — Queer', badge: 'Queer' },
+  { code: 'A', prefix: 'BA', label: 'A — Asexual / Arrománticx', badge: 'Asexual' },
+  { code: 'X', prefix: 'BX', label: '+ — No Binarie / Más (+)', badge: 'No Binarie / +' }
 ];
 
 export const SUPERADMIN_PROFILE: UserProfile = {
@@ -54,8 +54,20 @@ export function normalizePin(raw: string): string {
   return raw.trim().toUpperCase();
 }
 
-// Helper para calcular un hash seguro y enmascarado de cédula
+// Helper para normalizar y calcular un hash seguro y enmascarado de cédula
+// Soporta "V-24123456", "24123456", "V24.123.456" produciendo el mismo hash
 export function hashCedula(cedulaRaw: string): string {
+  let clean = cedulaRaw.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (/^[0-9]{5,10}$/.test(clean)) {
+    clean = `V${clean}`;
+  }
+  if (clean.length < 5) return clean;
+  const prefix = clean.slice(0, 3);
+  const suffix = clean.slice(-3);
+  return `${prefix}***${suffix}`;
+}
+
+export function hashCedulaLegacy(cedulaRaw: string): string {
   const clean = cedulaRaw.toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (clean.length < 5) return clean;
   const prefix = clean.slice(0, 3);
@@ -256,9 +268,11 @@ export const authService = {
     return userProfile;
   },
 
-  // LOGIN POR PIN + CONTRASEÑA
-  async loginWithPin(pinInput: string, passwordInput: string): Promise<UserProfile> {
-    const cleanPin = normalizePin(pinInput);
+  // LOGIN POR PIN O CÉDULA + CONTRASEÑA
+  async loginWithPin(identifierInput: string, passwordInput: string): Promise<UserProfile> {
+    const cleanPin = normalizePin(identifierInput);
+    const cedHash = hashCedula(identifierInput);
+    const cedHashLeg = hashCedulaLegacy(identifierInput);
     const cleanPass = passwordInput.trim();
 
     if (!cleanPass) {
@@ -276,19 +290,44 @@ export const authService = {
       return SUPERADMIN_PROFILE;
     }
 
-    // 2. Buscar cuenta de usuario normal en Supabase o almacenamiento local
-    const { data: profile } = await supabase
+    // 2. Buscar cuenta por PIN en Supabase o almacenamiento local
+    let { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('pin', cleanPin)
       .maybeSingle();
 
+    // 3. Si no se encontró por PIN, buscar por Cédula (hash normalizado o legacy)
+    if (!profile && cedHash.length >= 5) {
+      const { data: byCed } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHash}%`)
+        .maybeSingle();
+      profile = byCed;
+    }
+
+    if (!profile && cedHashLeg.length >= 5 && cedHashLeg !== cedHash) {
+      const { data: byCedLeg } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHashLeg}%`)
+        .maybeSingle();
+      profile = byCedLeg;
+    }
+
     const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
-    const localProfile = localDirectory.find((p) => p.pin === cleanPin);
+    const localProfile = localDirectory.find(
+      (p) =>
+        p.pin === cleanPin ||
+        p.cedula_only === cedHash ||
+        p.cedula_only === cedHashLeg ||
+        (p.cedula_hash && (p.cedula_hash.startsWith(cedHash) || p.cedula_hash.startsWith(cedHashLeg)))
+    );
     const found = profile || localProfile;
 
     if (!found) {
-      throw new Error('No se encontró ninguna cuenta registrada con ese PIN.');
+      throw new Error('No se encontró ninguna cuenta registrada con ese PIN o Cédula.');
     }
 
     if (found.is_enabled === false) {
@@ -303,7 +342,7 @@ export const authService = {
       (storedCedulaField.includes('::') ? storedCedulaField.split('::')[1] : null);
 
     if (storedPassHash && storedPassHash !== inputPassHash) {
-      throw new Error('Contraseña incorrecta para este PIN.');
+      throw new Error('Contraseña incorrecta.');
     }
 
     const userProfile: UserProfile = {

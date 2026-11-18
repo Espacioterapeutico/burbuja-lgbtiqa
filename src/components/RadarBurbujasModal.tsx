@@ -12,7 +12,7 @@ import {
 import confetti from 'canvas-confetti';
 import type { UserProfile, Contact } from '../types';
 import { supabase } from '../lib/supabase';
-import { STATUS_CONFIG } from './StatusBadge';
+import { getStatusConfig } from './StatusBadge';
 import { SingleBubbleIcon } from './CommunityView';
 
 interface RadarBurbujasModalProps {
@@ -296,9 +296,17 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
                       alt={selectedBubbleUser.name}
                       className="w-14 h-14 rounded-2xl object-cover border-2 border-pink-500 shadow-lg"
                     />
-                    <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
-                      STATUS_CONFIG[selectedBubbleUser.status].dotColor
-                    }`} />
+                    {(() => {
+                      const stConf = getStatusConfig(selectedBubbleUser.status, selectedBubbleUser.customStatusLabel, selectedBubbleUser.customStatusColor);
+                      return (
+                        <span 
+                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
+                            stConf.dotColor || ''
+                          }`}
+                          style={stConf.customColor ? { backgroundColor: stConf.customColor } : undefined}
+                        />
+                      );
+                    })()}
                   </div>
                   <div>
                     <h3 className="font-extrabold text-base text-white flex items-center gap-1.5">

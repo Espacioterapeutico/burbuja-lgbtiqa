@@ -269,10 +269,16 @@ export function App() {
   };
 
   // Status Handlers
-  const handleUpdateStatus = (newStatus: UserStatus) => {
+  const handleUpdateStatus = (newStatus: UserStatus, customLabel?: string, customColor?: string) => {
     const wasDetox = currentUser.status === 'desconectado';
-    setCurrentUser(prev => ({ ...prev, status: newStatus }));
-    authService.updateProfile(currentUser.id, { status: newStatus });
+    const profileUpdates: Partial<UserProfile> = {
+      status: newStatus,
+      ...(customLabel !== undefined ? { customStatusLabel: customLabel } : {}),
+      ...(customColor !== undefined ? { customStatusColor: customColor } : {})
+    };
+
+    setCurrentUser(prev => ({ ...prev, ...profileUpdates }));
+    authService.updateProfile(currentUser.id, profileUpdates);
 
     // Reconnecting from Detox
     if (wasDetox && newStatus !== 'desconectado') {
@@ -286,6 +292,20 @@ export function App() {
         avatar: currentUser.avatar
       });
       setBufferedToastsCount(0);
+    } else if (newStatus === 'desconectado') {
+      triggerMsnToast({
+        id: `toast-detox-${Date.now()}`,
+        title: 'Modo Desconectado Activo',
+        message: 'Entrando en Modo Detox. Tus contactos te verán desconectadx.',
+        avatar: currentUser.avatar
+      });
+    } else if (customLabel) {
+      triggerMsnToast({
+        id: `toast-status-${Date.now()}`,
+        title: 'Estado Actualizado',
+        message: `Ahora tus contactos te ven como: "${customLabel}"`,
+        avatar: currentUser.avatar
+      });
     }
   };
 

@@ -14,7 +14,7 @@ import {
   X
 } from 'lucide-react';
 import type { Contact, BubbleConnectionRequest } from '../../types';
-import { STATUS_CONFIG, StatusBadge } from '../StatusBadge';
+import { StatusBadge, getStatusConfig } from '../StatusBadge';
 import { BlockedDossiersSection } from './BlockedDossiersSection';
 import { SoapBubble } from '../SoapBubble';
 
@@ -246,11 +246,17 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                       hasStory ? 'border-pink-500 ring-2 ring-pink-500/40' : 'border-slate-800'
                     }`}
                   />
-                  <div
-                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
-                      STATUS_CONFIG[contact.status].dotColor
-                    }`}
-                  />
+                  {(() => {
+                    const stConf = getStatusConfig(contact.status, contact.customStatusLabel, contact.customStatusColor);
+                    return (
+                      <div
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
+                          stConf.dotColor || ''
+                        }`}
+                        style={stConf.customColor ? { backgroundColor: stConf.customColor } : undefined}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Info del Contacto */}
@@ -260,7 +266,13 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                       {contact.name}
                     </span>
                     <span className="text-[10px] text-pink-300 font-semibold">{contact.pronouns}</span>
-                    <StatusBadge status={contact.status} size="sm" showLabel={false} />
+                    <StatusBadge 
+                      status={contact.status} 
+                      size="sm" 
+                      showLabel={false} 
+                      customLabel={contact.customStatusLabel} 
+                      customColor={contact.customStatusColor} 
+                    />
                   </div>
 
                   <p className="text-xs text-slate-400 truncate mt-0.5 max-w-[190px] sm:max-w-[240px]">

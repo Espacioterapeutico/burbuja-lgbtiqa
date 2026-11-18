@@ -13,12 +13,16 @@ import {
   Edit3, 
   MessageSquare,
   MessageCircle,
-  Sparkles
+  Sparkles,
+  Plus,
+  Palette,
+  X
 } from 'lucide-react';
-import type { UserProfile, UserStatus } from '../types';
+import type { UserProfile, UserStatus, StandardUserStatus, CustomStatusItem } from '../types';
 import { parseMusicLink } from '../utils/musicParser';
 import { SUPERADMIN_PIN } from '../services/authService';
 import { ApkDownloadModal } from './ApkDownloadModal';
+import { getStatusConfig } from './StatusBadge';
 import confetti from 'canvas-confetti';
 
 interface ProfileTabProps {
@@ -28,51 +32,34 @@ interface ProfileTabProps {
   onOpenEditProfile: () => void;
   onOpenSharePIN: () => void;
   onOpenSuperadmin?: () => void;
-  onUpdateStatus: (status: UserStatus) => void;
+  onUpdateStatus: (status: UserStatus, customLabel?: string, customColor?: string) => void;
   onUpdatePersonalMessage: (msg: string) => void;
   onToggleWhatsAppBridge?: () => void;
   onLogout: () => void;
   onDeleteAccount?: () => void;
 }
 
-const STATUS_CONFIG: Record<UserStatus, { label: string; dotColor: string; bgBadge: string; textBadge: string }> = {
-  disponible: { 
-    label: 'Disponible', 
-    dotColor: 'bg-emerald-500', 
-    bgBadge: 'bg-emerald-500/15 border-emerald-500/30', 
-    textBadge: 'text-emerald-500 dark:text-emerald-400' 
-  },
-  ausente: { 
-    label: 'Ausente', 
-    dotColor: 'bg-amber-500', 
-    bgBadge: 'bg-amber-500/15 border-amber-500/30', 
-    textBadge: 'text-amber-500 dark:text-amber-400' 
-  },
-  ocupado: { 
-    label: 'Ocupadx', 
-    dotColor: 'bg-rose-500', 
-    bgBadge: 'bg-rose-500/15 border-rose-500/30', 
-    textBadge: 'text-rose-500 dark:text-rose-400' 
-  },
-  en_crisis: { 
-    label: '💜 En Crisis (Auxilio)', 
-    dotColor: 'bg-purple-500 animate-ping', 
-    bgBadge: 'bg-purple-500/20 border-purple-500/50', 
-    textBadge: 'text-purple-600 dark:text-purple-300 font-bold' 
-  },
-  en_fiesta: { 
-    label: 'De Fiesta 🪩', 
-    dotColor: 'bg-cyan-500', 
-    bgBadge: 'bg-cyan-500/15 border-cyan-500/30', 
-    textBadge: 'text-cyan-500 dark:text-cyan-400' 
-  },
-  desconectado: { 
-    label: 'Desconectadx', 
-    dotColor: 'bg-slate-400', 
-    bgBadge: 'bg-slate-500/15 border-slate-500/30', 
-    textBadge: 'text-slate-500 dark:text-slate-400' 
-  }
-};
+const STANDARD_STATUSES: { key: StandardUserStatus; label: string; dotColor: string; icon: string }[] = [
+  { key: 'disponible', label: 'Disponible', dotColor: 'bg-emerald-500', icon: '🟢' },
+  { key: 'ausente', label: 'Ausente', dotColor: 'bg-amber-500', icon: '🟠' },
+  { key: 'ocupado', label: 'Ocupadx', dotColor: 'bg-rose-500', icon: '🔴' },
+  { key: 'en_fiesta', label: 'De Fiesta', dotColor: 'bg-cyan-500', icon: '🪩' },
+  { key: 'en_crisis', label: 'En Crisis', dotColor: 'bg-purple-500 animate-ping', icon: '💜' },
+  { key: 'desconectado', label: 'Desconectarme', dotColor: 'bg-slate-400', icon: '⚪' },
+];
+
+const COLOR_PRESETS = [
+  { name: 'Púrpura Queer', hex: '#a855f7' },
+  { name: 'Rosa Neón', hex: '#ec4899' },
+  { name: 'Cian Caribe', hex: '#06b6d4' },
+  { name: 'Azul Eléctrico', hex: '#3b82f6' },
+  { name: 'Verde Menta', hex: '#10b981' },
+  { name: 'Lima Fresca', hex: '#84cc16' },
+  { name: 'Amarillo Neón', hex: '#eab308' },
+  { name: 'Naranja Fuego', hex: '#f97316' },
+  { name: 'Rojo Pasión', hex: '#ef4444' },
+  { name: 'Lavanda Suave', hex: '#8b5cf6' }
+];
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({
   currentUser,
@@ -92,8 +79,31 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const [draftMsg, setDraftMsg] = useState(currentUser.personalMessage);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
+  // Estados personalizados
+  const [customStatuses, setCustomStatuses] = useState<CustomStatusItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('burbuja_custom_statuses');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return currentUser.customStatuses || [
+      { id: 'cs-estudiando', label: 'Estudiando 📚', color: '#3b82f6' },
+      { id: 'cs-gym', label: 'En el gym 💪', color: '#10b981' },
+      { id: 'cs-relax', label: 'Descansando ☕', color: '#ec4899' }
+    ];
+  });
+
+  const [isCreatingCustomStatus, setIsCreatingCustomStatus] = useState(false);
+  const [newStatusText, setNewStatusText] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#ec4899');
+
   const isSuperadmin = currentUser.id === 'superadmin-root' || currentUser.pin === SUPERADMIN_PIN;
   const parsedMusic = parseMusicLink(currentUser.currentSong);
+
+  const curStatusConfig = getStatusConfig(
+    currentUser.status, 
+    currentUser.customStatusLabel, 
+    currentUser.customStatusColor
+  );
 
   const handleCopyPin = () => {
     navigator.clipboard?.writeText(currentUser.pin);
@@ -105,6 +115,43 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const handleSaveMsg = () => {
     onUpdatePersonalMessage(draftMsg.trim());
     setIsEditingMsg(false);
+  };
+
+  const handleSaveAndApplyCustomStatus = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const label = newStatusText.trim();
+    if (!label) return;
+
+    const newItem: CustomStatusItem = {
+      id: `cs-${Date.now()}`,
+      label,
+      color: newStatusColor,
+      createdAt: new Date().toISOString()
+    };
+
+    const updated = [newItem, ...customStatuses.filter(cs => cs.label.toLowerCase() !== label.toLowerCase())].slice(0, 8);
+    setCustomStatuses(updated);
+    try {
+      localStorage.setItem('burbuja_custom_statuses', JSON.stringify(updated));
+    } catch {}
+
+    onUpdateStatus('personalizado', label, newStatusColor);
+    confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } });
+    setIsCreatingCustomStatus(false);
+    setNewStatusText('');
+  };
+
+  const handleDeleteCustomStatus = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customStatuses.filter(cs => cs.id !== id);
+    setCustomStatuses(updated);
+    try {
+      localStorage.setItem('burbuja_custom_statuses', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleSelectCustomStatus = (cs: CustomStatusItem) => {
+    onUpdateStatus('personalizado', cs.label, cs.color);
   };
 
   return (
@@ -183,9 +230,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               <Camera className="w-4 h-4" />
             </div>
             {/* Punto de estado en vivo */}
-            <div className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 ${
-              STATUS_CONFIG[currentUser.status].dotColor
-            } flex items-center justify-center text-xs shadow-md`}>
+            <div 
+              className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full border-2 border-white dark:border-slate-900 ${
+                curStatusConfig.dotColor || ''
+              } flex items-center justify-center text-xs shadow-md`}
+              style={curStatusConfig.customColor ? { backgroundColor: curStatusConfig.customColor, boxShadow: `0 0 8px ${curStatusConfig.customColor}` } : undefined}
+            >
               {currentUser.status === 'en_crisis' ? '💜' : ''}
             </div>
           </button>
@@ -276,40 +326,268 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </div>
       </div>
 
-      {/* 3. Selector Rápido de Estado Emocional */}
-      <div className={`p-4 rounded-3xl border shadow-md space-y-2.5 ${
+      {/* 3. Selector Rápido de Estado Emocional & Personalizado */}
+      <div className={`p-4 rounded-3xl border shadow-md space-y-3 ${
         theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/90 border-slate-800'
       }`}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Tu Estado Actual
           </span>
-          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-            STATUS_CONFIG[currentUser.status].bgBadge
-          } ${STATUS_CONFIG[currentUser.status].textBadge}`}>
-            {STATUS_CONFIG[currentUser.status].label}
-          </span>
+          {curStatusConfig.customColor ? (
+            <span
+              style={{
+                backgroundColor: `${curStatusConfig.customColor}20`,
+                borderColor: `${curStatusConfig.customColor}40`,
+                color: curStatusConfig.customColor
+              }}
+              className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1.5 shadow-sm"
+            >
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: curStatusConfig.customColor, boxShadow: `0 0 6px ${curStatusConfig.customColor}` }}
+              />
+              <span className="truncate max-w-[130px]">{curStatusConfig.label}</span>
+            </span>
+          ) : (
+            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${curStatusConfig.bgBadge} ${curStatusConfig.textBadge}`}>
+              {curStatusConfig.label}
+            </span>
+          )}
         </div>
 
-        {/* Botones de estado con un toque */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {(['disponible', 'ausente', 'ocupado', 'en_crisis'] as UserStatus[]).map((st) => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => onUpdateStatus(st)}
-              className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                currentUser.status === st
-                  ? 'border-pink-500 bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-2 ring-pink-500/30'
-                  : theme === 'light'
-                    ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    : 'border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${STATUS_CONFIG[st].dotColor}`} />
-              <span className="truncate">{STATUS_CONFIG[st].label.split(' ')[0]}</span>
-            </button>
-          ))}
+        {/* Estados Estándar (incluyendo Desconectarme) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {STANDARD_STATUSES.map((st) => {
+            const isSelected = currentUser.status === st.key;
+            return (
+              <button
+                key={st.key}
+                type="button"
+                onClick={() => onUpdateStatus(st.key)}
+                className={`p-2.5 rounded-2xl border text-xs font-bold transition-all flex items-center justify-between gap-1.5 active:scale-95 ${
+                  isSelected
+                    ? 'border-pink-500 bg-pink-500/15 text-pink-600 dark:text-pink-300 ring-2 ring-pink-500/30'
+                    : theme === 'light'
+                      ? 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      : 'border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${st.dotColor}`} />
+                  <span className="truncate">{st.label}</span>
+                </div>
+                <span className="text-xs">{st.icon}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sección de Estados Personalizados */}
+        <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5 text-pink-500" />
+              <span>Estados Personalizados</span>
+            </span>
+            {!isCreatingCustomStatus && (
+              <button
+                type="button"
+                onClick={() => setIsCreatingCustomStatus(true)}
+                className="text-[11px] font-extrabold text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Agregar estado</span>
+              </button>
+            )}
+          </div>
+
+          {/* Formulario Creador de Estado Personalizado */}
+          {isCreatingCustomStatus ? (
+            <div className={`p-3.5 rounded-2xl border space-y-3 animate-in fade-in zoom-in-95 ${
+              theme === 'light' ? 'bg-slate-50 border-pink-300/80' : 'bg-slate-950/80 border-pink-500/40'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Crear y Personalizar Estado</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCustomStatus(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Input de texto del estado */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                  Texto del estado (ej: Estudiando 📚, En el gym 💪, En pausa ☕)
+                </label>
+                <input
+                  type="text"
+                  value={newStatusText}
+                  onChange={(e) => setNewStatusText(e.target.value)}
+                  placeholder="Escribe tu estado..."
+                  maxLength={35}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none ${
+                    theme === 'light'
+                      ? 'bg-white border-slate-300 focus:border-pink-500 text-slate-900'
+                      : 'bg-slate-900 border-slate-700 focus:border-pink-500 text-slate-100'
+                  }`}
+                  autoFocus
+                />
+              </div>
+
+              {/* Paleta de colores */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  Personalizar Color
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {COLOR_PRESETS.map((c) => (
+                    <button
+                      key={c.hex}
+                      type="button"
+                      onClick={() => setNewStatusColor(c.hex)}
+                      className={`w-6 h-6 rounded-full transition-transform active:scale-90 flex items-center justify-center ${
+                        newStatusColor === c.hex ? 'ring-2 ring-offset-2 ring-pink-500 scale-110 shadow-md' : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                      title={c.name}
+                    >
+                      {newStatusColor === c.hex && <Check className="w-3 h-3 text-white" />}
+                    </button>
+                  ))}
+                  
+                  {/* Selector HEX libre */}
+                  <div className="flex items-center gap-1.5 pl-1.5 border-l border-slate-300 dark:border-slate-700">
+                    <label 
+                      className="w-6 h-6 rounded-full cursor-pointer border border-white/40 flex items-center justify-center relative overflow-hidden shadow-sm"
+                      style={{ backgroundColor: newStatusColor }}
+                      title="Elegir cualquier color libre"
+                    >
+                      <input
+                        type="color"
+                        value={newStatusColor}
+                        onChange={(e) => setNewStatusColor(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                      <Palette className="w-3 h-3 text-white mix-blend-difference" />
+                    </label>
+                    <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 uppercase">
+                      {newStatusColor}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Previsualización en vivo */}
+              <div className="pt-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                  Vista previa en vivo:
+                </span>
+                <div
+                  style={{
+                    backgroundColor: `${newStatusColor}20`,
+                    borderColor: `${newStatusColor}50`,
+                    color: newStatusColor
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-2xl border font-bold text-xs shadow-sm"
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: newStatusColor, boxShadow: `0 0 8px ${newStatusColor}` }}
+                  />
+                  <span>{newStatusText.trim() || 'Tu estado personalizado'}</span>
+                </div>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCustomStatus(false)}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={!newStatusText.trim()}
+                  onClick={() => handleSaveAndApplyCustomStatus()}
+                  className="px-4 py-1.5 text-xs font-bold rounded-xl bg-pink-600 hover:bg-pink-500 text-white disabled:opacity-50 disabled:pointer-events-none transition-all active:scale-95 shadow-md flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Guardar y Activar</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Lista de estados personalizados guardados */
+            <div className="flex flex-wrap gap-2">
+              {customStatuses.map((cs) => {
+                const isActive = currentUser.status === 'personalizado' && currentUser.customStatusLabel === cs.label;
+                return (
+                  <div
+                    key={cs.id}
+                    className={`group relative inline-flex items-center rounded-2xl border transition-all active:scale-95 shadow-sm ${
+                      isActive
+                        ? 'ring-2 ring-offset-1'
+                        : theme === 'light'
+                          ? 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800'
+                          : 'border-slate-800 bg-slate-950 hover:bg-slate-900 text-slate-200'
+                    }`}
+                    style={
+                      isActive
+                        ? { 
+                            backgroundColor: `${cs.color}18`, 
+                            borderColor: cs.color, 
+                            color: cs.color,
+                            boxShadow: `0 0 10px ${cs.color}30`
+                          }
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCustomStatus(cs)}
+                      className="px-2.5 py-1.5 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: cs.color, boxShadow: `0 0 5px ${cs.color}` }}
+                      />
+                      <span className="truncate max-w-[130px]">{cs.label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteCustomStatus(cs.id, e)}
+                      className="pr-2 pl-0.5 text-slate-400 hover:text-rose-500 transition-colors opacity-60 group-hover:opacity-100"
+                      title="Eliminar este estado"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => setIsCreatingCustomStatus(true)}
+                className={`px-3 py-1.5 rounded-2xl border border-dashed text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
+                  theme === 'light'
+                    ? 'border-pink-300 text-pink-600 hover:bg-pink-50'
+                    : 'border-pink-500/40 text-pink-400 hover:bg-pink-950/30'
+                }`}
+              >
+                <Plus className="w-3 h-3" />
+                <span>Nuevo estado</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -11,7 +11,7 @@ import {
   Loader2,
   Sparkles
 } from 'lucide-react';
-import type { UserProfile, UserStatus } from '../types';
+import type { UserProfile, UserStatus, StandardUserStatus } from '../types';
 import { STATUS_CONFIG } from './StatusBadge';
 import { parseMusicLink, DEMO_MUSIC_PRESETS } from '../utils/musicParser';
 import { storageService } from '../services/storageService';
@@ -443,7 +443,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   Estado Actual de Conexión
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {(Object.keys(STATUS_CONFIG) as UserStatus[]).map((st) => (
+                  {(Object.keys(STATUS_CONFIG) as StandardUserStatus[]).map((st) => (
                     <button
                       type="button"
                       key={st}

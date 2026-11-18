@@ -1,10 +1,20 @@
-export type UserStatus = 
+export type StandardUserStatus = 
   | 'disponible' 
   | 'ocupado' 
   | 'en_crisis' 
   | 'en_fiesta' 
   | 'ausente' 
   | 'desconectado';
+
+export type UserStatus = StandardUserStatus | 'personalizado' | (string & {});
+
+export interface CustomStatusItem {
+  id: string;
+  label: string;
+  color: string; // Color HEX (#ec4899) o nombre
+  emoji?: string;
+  createdAt?: string;
+}
 
 export interface UserProfile {
   id: string;
@@ -15,6 +25,9 @@ export interface UserProfile {
   referredByPin: string; // PIN of the person who referred them
   referredByName: string;
   status: UserStatus;
+  customStatusLabel?: string;
+  customStatusColor?: string;
+  customStatuses?: CustomStatusItem[];
   personalMessage: string;
   currentSong: string;
   allowWhatsAppBridge: boolean;
@@ -34,6 +47,8 @@ export interface Contact {
   referredByPin?: string;
   referredByName?: string;
   status: UserStatus;
+  customStatusLabel?: string;
+  customStatusColor?: string;
   personalMessage: string;
   currentSong: string;
   allowWhatsAppBridge: boolean;

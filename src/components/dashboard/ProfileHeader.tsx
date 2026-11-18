@@ -16,8 +16,8 @@ import {
   ShieldCheck,
   Globe
 } from 'lucide-react';
-import type { UserProfile, UserStatus } from '../../types';
-import { STATUS_CONFIG } from '../StatusBadge';
+import type { UserProfile, UserStatus, StandardUserStatus } from '../../types';
+import { STATUS_CONFIG, getStatusConfig } from '../StatusBadge';
 import { Logo } from '../Logo';
 import { parseMusicLink } from '../../utils/musicParser';
 
@@ -286,11 +286,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
               <span>Cambiar</span>
             </div>
-            <div className={`absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full border-2 ${
-              theme === 'light' ? 'border-white' : 'border-slate-900'
-            } ${STATUS_CONFIG[currentUser.status].dotColor} flex items-center justify-center text-xs shadow-md`}>
-              {currentUser.status === 'en_crisis' ? '💜' : ''}
-            </div>
+            {(() => {
+              const curSt = getStatusConfig(currentUser.status, currentUser.customStatusLabel, currentUser.customStatusColor);
+              return (
+                <div 
+                  className={`absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full border-2 ${
+                    theme === 'light' ? 'border-white' : 'border-slate-900'
+                  } ${curSt.dotColor || ''} flex items-center justify-center text-xs shadow-md`}
+                  style={curSt.customColor ? { backgroundColor: curSt.customColor } : undefined}
+                >
+                  {currentUser.status === 'en_crisis' ? '💜' : ''}
+                </div>
+              );
+            })()}
           </button>
 
           {/* COLUMNA: NOMBRE (PRONOMBRES) -> MENSAJE / MÚSICA -> ESTATUS */}
@@ -413,8 +421,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                     : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200'
                 }`}
               >
-                <span className={`w-2.5 h-2.5 rounded-full ring-2 ${STATUS_CONFIG[currentUser.status].dotColor}`} />
-                <span>{STATUS_CONFIG[currentUser.status].label}</span>
+                {(() => {
+                  const curSt = getStatusConfig(currentUser.status, currentUser.customStatusLabel, currentUser.customStatusColor);
+                  return (
+                    <>
+                      <span 
+                        className={`w-2.5 h-2.5 rounded-full ring-2 ${curSt.dotColor || ''}`} 
+                        style={curSt.customColor ? { backgroundColor: curSt.customColor } : undefined}
+                      />
+                      <span>{curSt.label}</span>
+                    </>
+                  );
+                })()}
                 <ChevronDown className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'} transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -430,7 +448,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   }`}>
                     Cambiar mi Estado
                   </div>
-                  {(Object.keys(STATUS_CONFIG) as UserStatus[]).map((st) => (
+                  {(Object.keys(STATUS_CONFIG) as StandardUserStatus[]).map((st) => (
                     <button
                       key={st}
                       onClick={() => {

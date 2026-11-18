@@ -12,7 +12,8 @@ import {
   Smartphone, 
   Edit3, 
   MessageSquare,
-  MessageCircle
+  MessageCircle,
+  Sparkles
 } from 'lucide-react';
 import type { UserProfile, UserStatus } from '../types';
 import { parseMusicLink } from '../utils/musicParser';
@@ -417,6 +418,30 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           Opciones y Seguridad
         </span>
 
+        {/* Compartir Pase de Invitación (PIN) */}
+        <button
+          type="button"
+          onClick={onOpenSharePIN}
+          className="w-full py-3 px-3.5 rounded-2xl bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-pink-500/15 hover:from-pink-500/20 hover:to-purple-500/20 border border-pink-500/40 text-pink-700 dark:text-pink-300 text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-sm group"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-pink-500/20 border border-pink-500/40 flex items-center justify-center text-pink-500">
+              <Share2 className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <span className="font-extrabold text-pink-700 dark:text-pink-200 block text-xs">
+                Compartir Pase de Invitación
+              </span>
+              <span className="text-[10px] text-pink-600/80 dark:text-pink-400/80 block">
+                Invita a personas de confianza con tu PIN
+              </span>
+            </div>
+          </div>
+          <span className="text-[10px] px-2.5 py-1 rounded-full bg-pink-500 text-white font-black uppercase tracking-wider shadow-sm">
+            {currentUser.invitationsRemaining} pases
+          </span>
+        </button>
+
         {/* Acceso a Superadmin (Solo si es Fundador/Superadmin) */}
         {isSuperadmin && onOpenSuperadmin && (
           <button
@@ -454,7 +479,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
           </div>
           <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-black uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse">
-            <Share2 className="w-3 h-3" />
+            <Sparkles className="w-3 h-3" />
             <span>Nueva actualización</span>
           </span>
         </button>

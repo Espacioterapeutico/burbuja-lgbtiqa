@@ -1,0 +1,1068 @@
+{
+  "metadata": {
+    "description": "Base de datos simulada de prueba y práctica para Burbuja LGBTIQA+",
+    "exportedAt": "2026-11-18T22:52:25.546Z",
+    "version": "1.0.0",
+    "totalUsers": 6,
+    "totalCommunities": 8,
+    "totalPosts": 11,
+    "totalReports": 2
+  },
+  "currentUserMock": {
+    "id": "user-me",
+    "name": "Alex Rivera",
+    "pronouns": "Elle / He",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    "pin": "BL-9842K",
+    "referredByPin": "BL-1100R",
+    "referredByName": "Carolina Méndez",
+    "status": "disponible",
+    "personalMessage": "Construyendo espacios seguros y recordando los zumbidos de Messenger 🌈✨",
+    "currentSong": "Troye Sivan - Rush",
+    "allowWhatsAppBridge": true,
+    "whatsAppNumber": "+584120001122",
+    "invitationsRemaining": 3,
+    "reputationScore": 98,
+    "radarVisible": false,
+    "city": "Barquisimeto"
+  },
+  "managedUsers": [
+    {
+      "id": "user-me",
+      "name": "Alex Rivera",
+      "pronouns": "Elle / He",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-9842K",
+      "cedulaHash": "V-24***891",
+      "referredByPin": "BL-1100R",
+      "referredByName": "Carolina Méndez",
+      "status": "disponible",
+      "isEnabled": true,
+      "joinedDate": "12 Ene 2026",
+      "city": "Barquisimeto",
+      "invitationsRemaining": 3,
+      "reputationScore": 98,
+      "personalMessage": "Construyendo espacios seguros y recordando los zumbidos de Messenger 🌈✨",
+      "createdCommunityIds": [
+        "comm-bqto"
+      ]
+    },
+    {
+      "id": "c1",
+      "name": "Val Martínez",
+      "pronouns": "Ella",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-4410A",
+      "cedulaHash": "V-26***432",
+      "referredByPin": "BL-9842K",
+      "referredByName": "Alex Rivera",
+      "status": "disponible",
+      "isEnabled": true,
+      "joinedDate": "02 Feb 2026",
+      "city": "Barquisimeto (Este)",
+      "invitationsRemaining": 2,
+      "reputationScore": 95,
+      "personalMessage": "¡Viernes de plan tranqui o picnic en el parque! 🌿☀️",
+      "createdCommunityIds": [
+        "comm-3"
+      ]
+    },
+    {
+      "id": "c2",
+      "name": "Sam Ortiz",
+      "pronouns": "Elle",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-8871Z",
+      "cedulaHash": "V-27***104",
+      "referredByPin": "BL-3312Q",
+      "referredByName": "Dani Rojas",
+      "status": "en_crisis",
+      "isEnabled": true,
+      "joinedDate": "14 Feb 2026",
+      "city": "Barquisimeto (Centro)",
+      "invitationsRemaining": 1,
+      "reputationScore": 92,
+      "personalMessage": "Día pesado con trámites... un cafecito o llamada suave me vendría bien 🫂💜",
+      "createdCommunityIds": [
+        "comm-2"
+      ]
+    },
+    {
+      "id": "c4",
+      "name": "Leo Mendoza",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-2290M",
+      "cedulaHash": "V-23***712",
+      "referredByPin": "BL-1100R",
+      "referredByName": "Carolina Méndez",
+      "status": "disponible",
+      "isEnabled": true,
+      "joinedDate": "20 Ene 2026",
+      "city": "Cabudare",
+      "invitationsRemaining": 4,
+      "reputationScore": 99,
+      "personalMessage": "Voluntarix en derechos humanos y rescate animal 🐾🏳️‍🌈",
+      "createdCommunityIds": [
+        "comm-4"
+      ]
+    },
+    {
+      "id": "u-mateo",
+      "name": "Mateo Salazar",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-8190C",
+      "cedulaHash": "V-28***551",
+      "referredByPin": "BL-4410A",
+      "referredByName": "Val Martínez",
+      "status": "disponible",
+      "isEnabled": true,
+      "joinedDate": "01 Mar 2026",
+      "city": "Barquisimeto (Nueva Segovia)",
+      "invitationsRemaining": 2,
+      "reputationScore": 90,
+      "personalMessage": "Amante del café de especialidad y fotografía urbana ☕📸",
+      "createdCommunityIds": []
+    },
+    {
+      "id": "u-bad-1",
+      "name": "Usuario Sospechoso (Gamer99)",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-9901X",
+      "cedulaHash": "V-21***409",
+      "referredByPin": "BL-1199X",
+      "referredByName": "Chris Taylor",
+      "status": "ausente",
+      "isEnabled": false,
+      "joinedDate": "10 Nov 2026",
+      "city": "Barquisimeto",
+      "invitationsRemaining": 0,
+      "reputationScore": 35,
+      "personalMessage": "Cuenta suspendida por moderación.",
+      "createdCommunityIds": []
+    }
+  ],
+  "contacts": [
+    {
+      "id": "c1",
+      "name": "Val Martínez",
+      "pronouns": "Ella",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-4410A",
+      "referredByPin": "BL-9842K",
+      "referredByName": "Alex Rivera",
+      "status": "disponible",
+      "personalMessage": "¡Viernes de plan tranqui o picnic en el parque! 🌿☀️",
+      "currentSong": "Chappell Roan - Good Luck, Babe!",
+      "allowWhatsAppBridge": true,
+      "whatsAppNumber": "+584142223344",
+      "stories": [
+        {
+          "id": "st-1",
+          "mediaUrl": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80",
+          "caption": "Nueva plantita rescatada 🌱💚",
+          "timestamp": "Hace 2 horas",
+          "reactions": [
+            {
+              "emoji": "🌱",
+              "count": 4
+            },
+            {
+              "emoji": "💖",
+              "count": 12
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "name": "Sam Ortiz",
+      "pronouns": "Elle",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-8871Z",
+      "referredByPin": "BL-3312Q",
+      "referredByName": "Dani Rojas",
+      "status": "en_crisis",
+      "personalMessage": "Día pesado con trámites... un cafecito o llamada suave me vendría bien 🫂💜",
+      "currentSong": "Phoebe Bridgers - Motion Sickness",
+      "allowWhatsAppBridge": true,
+      "whatsAppNumber": "+584244445566",
+      "stories": []
+    },
+    {
+      "id": "c3",
+      "name": "Leo Silva",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-2039T",
+      "referredByPin": "BL-9842K",
+      "referredByName": "Alex Rivera",
+      "status": "en_fiesta",
+      "personalMessage": "¡Hoy se baila en el Kiki Ball de la ciudad! Categoría Face & Runway 🪩🔥",
+      "currentSong": "Beyoncé - PURE/HONEY",
+      "allowWhatsAppBridge": false,
+      "stories": [
+        {
+          "id": "st-2",
+          "mediaUrl": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=600&q=80",
+          "caption": "Outfit listo para la pasarela de esta noche ✨",
+          "timestamp": "Hace 45 min",
+          "reactions": [
+            {
+              "emoji": "🔥",
+              "count": 18
+            },
+            {
+              "emoji": "👑",
+              "count": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c4",
+      "name": "Milo Vega",
+      "pronouns": "Elle",
+      "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-7763M",
+      "referredByPin": "BL-4410A",
+      "referredByName": "Val Martínez",
+      "status": "ocupado",
+      "personalMessage": "Renderizando cortometraje documental LGBTIQ+ 🎞️ Silencio por favor",
+      "currentSong": "Arlo Parks - Hope",
+      "allowWhatsAppBridge": false,
+      "hasBlockedMe": true,
+      "blockedAt": "Ayer, 18:30 hs",
+      "stories": []
+    },
+    {
+      "id": "c5",
+      "name": "Dani Rojas",
+      "pronouns": "Ella",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-3312Q",
+      "referredByPin": "BL-1199X",
+      "referredByName": "Chris Taylor",
+      "status": "ausente",
+      "personalMessage": "Almorzando con la familia elegida en la terraza 🥞☕",
+      "currentSong": "Villano Antillano - Roa",
+      "allowWhatsAppBridge": true,
+      "whatsAppNumber": "+584127778899",
+      "stories": []
+    },
+    {
+      "id": "c6",
+      "name": "Chris Taylor",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-1199X",
+      "referredByPin": "BL-9842K",
+      "referredByName": "Alex Rivera",
+      "status": "desconectado",
+      "personalMessage": "Modo Detox activo hasta el lunes 📵 Leyendo libros.",
+      "currentSong": "",
+      "allowWhatsAppBridge": false,
+      "stories": []
+    }
+  ],
+  "communities": [
+    {
+      "id": "comm-bqto",
+      "name": "Gays Barquisimeto & Lara",
+      "description": "Comunidad local para encuentros seguros, planes culturales en Barquisimeto, rutas de café y apoyo en el estado Lara.",
+      "category": "Comunidad Local",
+      "isClosed": false,
+      "icon": "🌆",
+      "memberCount": 412,
+      "activeNow": 4,
+      "tags": [
+        "Barquisimeto",
+        "Lara",
+        "Quedadas",
+        "Cultura"
+      ],
+      "lastActivityAt": "2026-11-11T19:55:00Z",
+      "isPinned": true,
+      "bannedWords": [
+        "pelea",
+        "grosero",
+        "hater",
+        "toxic",
+        "malo"
+      ],
+      "bannedWordAction": "replace",
+      "replacementWords": [
+        "bububu",
+        "burbuja"
+      ],
+      "autoMuteDuration": "Silenciado por 24 horas",
+      "creatorId": "user-me",
+      "members": [
+        {
+          "userId": "user-me",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-9842K",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        },
+        {
+          "userId": "c1",
+          "userName": "Val Martínez",
+          "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-4410A",
+          "role": "moderador",
+          "joinedAt": "Hace 3 meses"
+        },
+        {
+          "userId": "c3",
+          "userName": "Leo Silva",
+          "userAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-2039T",
+          "role": "participante",
+          "joinedAt": "Hace 1 mes"
+        },
+        {
+          "userId": "c2",
+          "userName": "Sam Ortiz",
+          "userAvatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-8871Z",
+          "role": "participante",
+          "joinedAt": "Hace 2 semanas"
+        }
+      ],
+      "pendingRequests": []
+    },
+    {
+      "id": "comm-1",
+      "name": "Cine & Cortos Queer",
+      "description": "Críticas, recomendaciones de festivales independientes y rescate de archivos audiovisuales históricos LGBTIQ+.",
+      "category": "Arte & Cultura",
+      "isClosed": false,
+      "icon": "🎬",
+      "memberCount": 1420,
+      "activeNow": 12,
+      "tags": [
+        "Cine",
+        "Festivales",
+        "Documentales",
+        "Fotografía"
+      ],
+      "lastActivityAt": "2026-11-11T19:20:00Z",
+      "isPinned": false,
+      "creatorId": "user-me",
+      "members": [
+        {
+          "userId": "user-me",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-9842K",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        },
+        {
+          "userId": "c6",
+          "userName": "Chris Taylor",
+          "userAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-1199X",
+          "role": "moderador",
+          "joinedAt": "Hace 5 meses"
+        },
+        {
+          "userId": "c5",
+          "userName": "Dani Rojas",
+          "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-3312Q",
+          "role": "participante",
+          "joinedAt": "Hace 2 meses"
+        }
+      ],
+      "pendingRequests": []
+    },
+    {
+      "id": "comm-2",
+      "name": "Espacio Seguro & Acompañamiento Trans",
+      "description": "Sala de apoyo mutuo, experiencias de transición, consejos de salud comunitaria y escucha empática.",
+      "category": "Apoyo & Cuidados",
+      "isClosed": true,
+      "pinCode": "TRANS-SAFE",
+      "icon": "🏳️‍⚧️",
+      "memberCount": 890,
+      "activeNow": 6,
+      "tags": [
+        "Salud",
+        "Acompañamiento",
+        "Red de Cuidados",
+        "Legal"
+      ],
+      "lastActivityAt": "2026-11-11T18:00:00Z",
+      "isPinned": false,
+      "creatorId": "c2",
+      "members": [
+        {
+          "userId": "c2",
+          "userName": "Sam Ortiz",
+          "userAvatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-8871Z",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        },
+        {
+          "userId": "user-me",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-9842K",
+          "role": "moderador",
+          "joinedAt": "Hace 4 meses"
+        },
+        {
+          "userId": "c1",
+          "userName": "Val Martínez",
+          "userAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-4410A",
+          "role": "participante",
+          "joinedAt": "Hace 3 semanas"
+        }
+      ],
+      "pendingRequests": [
+        {
+          "id": "req-1",
+          "userId": "c4",
+          "userName": "Milo Vega",
+          "userAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-7763M",
+          "requestedAt": "Hace 1 hora"
+        }
+      ]
+    },
+    {
+      "id": "comm-cozy",
+      "name": "Lecturas Queer & Poesía Nocturna",
+      "description": "Club de lectura recién formado. Espacio tranquilo para compartir fragmentos literarios disidentes.",
+      "category": "Literatura",
+      "isClosed": false,
+      "icon": "📖",
+      "memberCount": 18,
+      "activeNow": 2,
+      "tags": [
+        "Lectura",
+        "Poesia",
+        "ClubDeLibros"
+      ],
+      "lastActivityAt": "2026-11-10T15:30:00Z",
+      "isPinned": false,
+      "creatorId": "c5",
+      "members": [
+        {
+          "userId": "c5",
+          "userName": "Dani Rojas",
+          "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-3312Q",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        },
+        {
+          "userId": "user-me",
+          "userName": "Alex Rivera",
+          "userAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-9842K",
+          "role": "participante",
+          "joinedAt": "Ayer"
+        }
+      ],
+      "pendingRequests": []
+    },
+    {
+      "id": "comm-gamers",
+      "name": "Gamers & Geek Disidentes 🎮",
+      "description": "Comunidad de videojuegos, torneos inclusivos de Smash, rol de mesa D&D y servidores cooperativos libres de toxicidad.",
+      "category": "Gaming & Ocio",
+      "isClosed": false,
+      "icon": "🎮",
+      "memberCount": 320,
+      "activeNow": 7,
+      "tags": [
+        "Gaming",
+        "Nintendo",
+        "Discord",
+        "Anime"
+      ],
+      "lastActivityAt": "2026-11-12T12:15:00Z",
+      "isPinned": false,
+      "isJoined": false,
+      "creatorId": "c10",
+      "members": [
+        {
+          "userId": "c10",
+          "userName": "Gabi Play",
+          "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-5501G",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        }
+      ]
+    },
+    {
+      "id": "comm-legal",
+      "name": "Red Jurídica & Derechos LGBTIQA+ ⚖️",
+      "description": "Abogades y activistas ofreciendo orientación en cambio de nombre, protección laboral y derechos civiles en Venezuela.",
+      "category": "Activismo & Derechos",
+      "isClosed": false,
+      "icon": "⚖️",
+      "memberCount": 540,
+      "activeNow": 4,
+      "tags": [
+        "DerechosHumanos",
+        "AsesoriaLegal",
+        "Identidad",
+        "Lara"
+      ],
+      "lastActivityAt": "2026-11-12T11:40:00Z",
+      "isPinned": false,
+      "isJoined": false,
+      "creatorId": "c11",
+      "members": [
+        {
+          "userId": "c11",
+          "userName": "Dra. Andrea Morales",
+          "userAvatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-7721A",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        }
+      ]
+    },
+    {
+      "id": "comm-ballroom",
+      "name": "Música, Perreo Queer & Ballroom 🪩",
+      "description": "Kiki balls, playlists colaborativas, beats electrónicos y noches seguras sin prejuicios.",
+      "category": "Música & Fiesta",
+      "isClosed": false,
+      "icon": "🪩",
+      "memberCount": 890,
+      "activeNow": 11,
+      "tags": [
+        "Ballroom",
+        "Voguing",
+        "Musica",
+        "FiestaSegura"
+      ],
+      "lastActivityAt": "2026-11-12T13:00:00Z",
+      "isPinned": false,
+      "isJoined": false,
+      "creatorId": "c12",
+      "members": [
+        {
+          "userId": "c12",
+          "userName": "Micaela Vogue",
+          "userAvatar": "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-9930M",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        }
+      ]
+    },
+    {
+      "id": "comm-salud",
+      "name": "Salud Mental & Bienestar Colectivo 🌿",
+      "description": "Círculos de escucha activa con profesionales de la psicología y apoyo entre pares para sanar en comunidad.",
+      "category": "Salud & Bienestar",
+      "isClosed": true,
+      "pinCode": "SALUD-24",
+      "icon": "🌿",
+      "memberCount": 410,
+      "activeNow": 5,
+      "tags": [
+        "SaludMental",
+        "Terapia",
+        "CuidadoColectivo"
+      ],
+      "lastActivityAt": "2026-11-12T10:20:00Z",
+      "isPinned": false,
+      "isJoined": false,
+      "creatorId": "c13",
+      "members": [
+        {
+          "userId": "c13",
+          "userName": "Lic. Tomás Romero",
+          "userAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80",
+          "userPin": "BL-1188T",
+          "role": "admin",
+          "joinedAt": "Fundador"
+        }
+      ]
+    }
+  ],
+  "communityPosts": {
+    "comm-bqto": [
+      {
+        "id": "p-bqto-1",
+        "communityId": "comm-bqto",
+        "type": "text",
+        "creatorName": "Andrés Gil",
+        "creatorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-6621B",
+        "title": "¿Planes tranquilos este sábado por el Este de Barquisimeto?",
+        "content": "Pensando armar una mesa para tomar café y charlar sobre proyectos de diseño en Nueva Segovia. Si te animas avisa por el chat grupal de la comunidad 🙌☕",
+        "tags": [
+          "Barquisimeto",
+          "Cafe",
+          "Planes"
+        ],
+        "likes": 47,
+        "commentsCount": 9,
+        "postBg": "from-amber-950 via-slate-900 to-slate-950",
+        "createdAt": "2026-11-11T20:45:00Z",
+        "avgWatchTimeSeconds": 12,
+        "retentionRate": 0.85
+      },
+      {
+        "id": "p-bqto-2",
+        "communityId": "comm-bqto",
+        "type": "image",
+        "creatorName": "Carlos Mendoza",
+        "creatorAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-8190C",
+        "title": "Atardecer larense desde el Monumento al Sol 🌅",
+        "content": "Los crepúsculos de Barquisimeto nunca fallan. Recordatorio de pausar y contemplar.",
+        "mediaUrl": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80",
+        "tags": [
+          "Crepusculos",
+          "Atardecer",
+          "Lara"
+        ],
+        "likes": 124,
+        "commentsCount": 18,
+        "postBg": "from-orange-950 via-rose-950 to-slate-950",
+        "createdAt": "2026-11-10T18:00:00Z",
+        "avgWatchTimeSeconds": 15,
+        "retentionRate": 0.95
+      },
+      {
+        "id": "p-bqto-3",
+        "communityId": "comm-bqto",
+        "type": "video",
+        "creatorName": "Javier Ramos",
+        "creatorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-3301J",
+        "title": "Ruta de librerías y espacios seguros en Barquisimeto 📚✨",
+        "content": "Les dejo tres lugares con café delicioso donde se puede leer en paz sin miradas incómodas.",
+        "videoUrl": "https://assets.mixkit.co/videos/preview/mixkit-young-friends-talking-in-a-cafe-41874-large.mp4",
+        "musicTrack": "Devendra Banhart - Mi Negrita",
+        "tags": [
+          "EspaciosSeguros",
+          "RutaCultural"
+        ],
+        "likes": 89,
+        "commentsCount": 14,
+        "postBg": "from-indigo-950 via-purple-950 to-slate-950",
+        "createdAt": "2026-11-11T14:30:00Z",
+        "avgWatchTimeSeconds": 14,
+        "retentionRate": 0.92
+      }
+    ],
+    "comm-1": [
+      {
+        "id": "p-c1-1",
+        "communityId": "comm-1",
+        "type": "video",
+        "creatorName": "Milo Vega",
+        "creatorAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-7763M",
+        "title": "Top 3 joyas del cine queer independiente europeo 🇫🇷",
+        "content": "Analizamos estas obras maestras de Céline Sciamma y Xavier Dolan. ¿Cuál es tu escena favorita?",
+        "videoUrl": "https://assets.mixkit.co/videos/preview/mixkit-friends-walking-on-the-street-41870-large.mp4",
+        "musicTrack": "BSO Retrato de una Mujer en Llamas",
+        "tags": [
+          "CineQueer",
+          "CelineSciamma",
+          "Arthouse"
+        ],
+        "likes": 342,
+        "commentsCount": 28,
+        "postBg": "from-amber-900 via-rose-950 to-indigo-950"
+      },
+      {
+        "id": "p-c1-2",
+        "communityId": "comm-1",
+        "type": "text",
+        "creatorName": "Sofía Valera",
+        "creatorAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-4491S",
+        "title": "¿Por qué nos cuesta tanto ver finales felices en historias LGBTIQ+?",
+        "content": "Basta del cliché de la tragedia queer en el cine comercial. Merecemos historias donde los personajes amen, rían, construyan comunidad y sean felices sin pagar un tributo de sufrimiento al guión.",
+        "tags": [
+          "Debate",
+          "FinalesFelices",
+          "Guion"
+        ],
+        "likes": 512,
+        "commentsCount": 63,
+        "postBg": "from-purple-950 via-pink-950 to-slate-950"
+      }
+    ],
+    "comm-2": [
+      {
+        "id": "p-c2-1",
+        "communityId": "comm-2",
+        "type": "video",
+        "creatorName": "Sam Ortiz",
+        "creatorAvatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-8871Z",
+        "title": "Recordatorio diario: Tu ritmo es el correcto 🏳️‍⚧️💖",
+        "content": "Si hoy el mundo exterior se siente ruidoso o abrumador, respira profundo. No estás solx aquí.",
+        "videoUrl": "https://assets.mixkit.co/videos/preview/mixkit-hands-holding-a-pride-flag-41883-large.mp4",
+        "tags": [
+          "Acompañamiento",
+          "SaludEmocional",
+          "AmorPropio"
+        ],
+        "musicTrack": "Lofi Calma - Safe Space Beats",
+        "likes": 890,
+        "commentsCount": 76,
+        "postBg": "from-sky-950 via-pink-950 to-slate-950"
+      }
+    ],
+    "comm-cozy": [
+      {
+        "id": "p-cozy-1",
+        "communityId": "comm-cozy",
+        "type": "text",
+        "creatorName": "Mariana P.",
+        "creatorAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-9912M",
+        "title": "Primera lectura del mes: \"Cosas que no se pueden decir\"",
+        "content": "Inauguramos este club para leer poemas que sanan. ¡Invita a 1 amigx más para que alcancemos el quorum de 3 y se abra el chat grupal!",
+        "tags": [
+          "Poesia",
+          "LecturaQueer"
+        ],
+        "likes": 21,
+        "commentsCount": 2,
+        "postBg": "from-teal-950 via-slate-900 to-slate-950"
+      }
+    ],
+    "comm-gamers": [
+      {
+        "id": "p-gamers-1",
+        "communityId": "comm-gamers",
+        "type": "image",
+        "creatorName": "Gabi Play",
+        "creatorAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-5501G",
+        "title": "¡Torneo de Mario Kart & Smash este fin de semana! 🏎️🎮",
+        "content": "Abierto el registro para las salas cooperativas. Servidor con moderación activa y cero actitudes tóxicas.",
+        "mediaUrl": "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80",
+        "tags": [
+          "Gaming",
+          "Torneo",
+          "Discord"
+        ],
+        "likes": 184,
+        "commentsCount": 32,
+        "postBg": "from-violet-950 via-purple-950 to-slate-950",
+        "createdAt": "2026-11-12T12:00:00Z",
+        "avgWatchTimeSeconds": 15,
+        "retentionRate": 0.94
+      }
+    ],
+    "comm-legal": [
+      {
+        "id": "p-legal-1",
+        "communityId": "comm-legal",
+        "type": "text",
+        "creatorName": "Dra. Andrea Morales",
+        "creatorAvatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-7721A",
+        "title": "Guía práctica: Protección contra discriminación en el trabajo ⚖️",
+        "content": "Compartimos las normativas laborales vigentes y pasos para documentar cualquier incidente de hostigamiento con validez probatoria.",
+        "tags": [
+          "DerechosHumanos",
+          "AsesoriaLegal",
+          "Lara"
+        ],
+        "likes": 245,
+        "commentsCount": 41,
+        "postBg": "from-slate-900 via-indigo-950 to-slate-950",
+        "createdAt": "2026-11-12T10:30:00Z",
+        "avgWatchTimeSeconds": 20,
+        "retentionRate": 0.9
+      }
+    ],
+    "comm-ballroom": [
+      {
+        "id": "p-ballroom-1",
+        "communityId": "comm-ballroom",
+        "type": "video",
+        "creatorName": "Micaela Vogue",
+        "creatorAvatar": "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-9930M",
+        "title": "Kiki Session: Práctica de Old Way & Vogue Femme ✨🪩",
+        "content": "La pista es nuestro refugio donde nadie nos apaga el brillo. ¡Pásate por el chat para sumarte a la próxima sesión de entrenamiento!",
+        "videoUrl": "https://assets.mixkit.co/videos/preview/mixkit-party-crowd-enjoying-a-nightclub-performance-41865-large.mp4",
+        "musicTrack": "Beyoncé - PURE/HONEY",
+        "tags": [
+          "Ballroom",
+          "VogueFemme",
+          "FiestaSegura"
+        ],
+        "likes": 430,
+        "commentsCount": 58,
+        "postBg": "from-fuchsia-950 via-rose-950 to-slate-950",
+        "createdAt": "2026-11-12T11:00:00Z",
+        "avgWatchTimeSeconds": 18,
+        "retentionRate": 0.96
+      }
+    ],
+    "comm-salud": [
+      {
+        "id": "p-salud-1",
+        "communityId": "comm-salud",
+        "type": "image",
+        "creatorName": "Lic. Tomás Romero",
+        "creatorAvatar": "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80",
+        "creatorPin": "BL-1188T",
+        "title": "Tus emociones son válidas: Círculo de escucha de los jueves 🌿",
+        "content": "Una sala silenciosa donde no tienes que fingir que todo está bien. Acompañamiento entre pares supervisado.",
+        "mediaUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80",
+        "tags": [
+          "SaludMental",
+          "CuidadoMutuo",
+          "Bienestar"
+        ],
+        "likes": 198,
+        "commentsCount": 27,
+        "postBg": "from-emerald-950 via-teal-950 to-slate-950",
+        "createdAt": "2026-11-12T09:45:00Z",
+        "avgWatchTimeSeconds": 14,
+        "retentionRate": 0.91
+      }
+    ]
+  },
+  "chatMessages": {
+    "comm-bqto": [
+      {
+        "id": "mb1",
+        "communityId": "comm-bqto",
+        "senderName": "Andrés Gil",
+        "senderAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Él",
+        "text": "¡Buenas tardes a la gente de Barquisimeto! ¿Quién se anota para una tarde de juegos de mesa este finde?",
+        "timestamp": "16:30"
+      },
+      {
+        "id": "mb2",
+        "communityId": "comm-bqto",
+        "senderName": "Carlos Mendoza",
+        "senderAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Él",
+        "text": "¡Yo me sumo! Conozco un café por la Av. Los Leones súper tranquilo.",
+        "timestamp": "16:32"
+      },
+      {
+        "id": "mb3",
+        "communityId": "comm-bqto",
+        "senderName": "Javier Ramos",
+        "senderAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Elle",
+        "text": "¡Genial! Ya somos varios. Recuerden que este chat es seguro y respetuoso.",
+        "timestamp": "16:35"
+      },
+      {
+        "id": "mb4",
+        "communityId": "comm-bqto",
+        "senderName": "Andrés Gil",
+        "senderAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Él",
+        "text": "Les grabé una nota de voz con las indicaciones del café ☕",
+        "timestamp": "16:38",
+        "audioUrl": "mock-audio",
+        "audioDurationSeconds": 6
+      },
+      {
+        "id": "mb5",
+        "communityId": "comm-bqto",
+        "senderName": "Carlos Mendoza",
+        "senderAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Él",
+        "text": "Miren la terraza del sitio, está hermosa 🪴✨",
+        "timestamp": "16:40",
+        "imageUrl": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80"
+      }
+    ],
+    "comm-1": [
+      {
+        "id": "m1",
+        "communityId": "comm-1",
+        "senderName": "Milo Vega",
+        "senderAvatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Elle",
+        "text": "¡Hola a todxs! ¿Vieron el nuevo clip que subí sobre directores franceses? Abro debate aquí.",
+        "timestamp": "18:15"
+      },
+      {
+        "id": "m2",
+        "communityId": "comm-1",
+        "senderName": "Val Martínez",
+        "senderAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+        "senderPronouns": "Ella",
+        "text": "¡Ufff Céline Sciamma es top! Esa escena en la fogata me sigue dando escalofríos.",
+        "timestamp": "18:18"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "id": "rep-1",
+      "reportedUserId": "u-bad-1",
+      "reportedUserName": "Usuario Sospechoso (Gamer99)",
+      "reportedUserAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+      "reportedUserPin": "BL-9901X",
+      "inviterPin": "BL-1199X",
+      "inviterName": "Chris Taylor",
+      "reason": "Comportamiento hostil en sala de apoyo",
+      "detail": "Insistió con preguntas invasivas y lenguaje despectivo hacia una persona trans en proceso de transición.",
+      "timestamp": "Hoy, 10:45 AM",
+      "status": "investigando_cadena",
+      "inviterAlerted": true
+    },
+    {
+      "id": "rep-2",
+      "reportedUserId": "u-spam-2",
+      "reportedUserName": "CryptoBot_Promo",
+      "reportedUserAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "reportedUserPin": "BL-4422K",
+      "inviterPin": "BL-2039T",
+      "inviterName": "Leo Silva",
+      "reason": "Envío de enlaces de spam comercial",
+      "detail": "Publicó enlaces repetitivos a plataformas externas de inversión engañosa.",
+      "timestamp": "Ayer, 21:15 PM",
+      "status": "sancionado",
+      "inviterAlerted": true
+    }
+  ],
+  "bubbleRequests": [
+    {
+      "id": "req-1",
+      "fromUserId": "u-mateo",
+      "fromUserName": "Mateo Salazar",
+      "fromUserAvatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      "fromUserPronouns": "Él",
+      "fromUserPin": "BL-8190C",
+      "introMessage": "¡Hola Alex! Vi que te gusta Troye Sivan y estás cerca por Nueva Segovia ☕ ¿Conectamos burbujas para compartir planes?",
+      "timestamp": "Hace 25 min",
+      "distanceKm": 1.2,
+      "city": "Barquisimeto Este",
+      "song": "Troye Sivan - Rush"
+    },
+    {
+      "id": "req-2",
+      "fromUserId": "u-sofi",
+      "fromUserName": "Sofi Lunar",
+      "fromUserAvatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      "fromUserPronouns": "Ella",
+      "fromUserPin": "BL-3301S",
+      "introMessage": "¡Buenas! Qué genial tu perfil en Barquisimeto, me encantaría sumar amistades seguras en la zona ✨",
+      "timestamp": "Hace 1 hora",
+      "distanceKm": 2.4,
+      "city": "Barquisimeto Centro",
+      "song": "Chappell Roan - Good Luck, Babe!"
+    }
+  ],
+  "radarUsers": [
+    {
+      "id": "r-1",
+      "name": "Mateo Salazar",
+      "pronouns": "Él",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-8190C",
+      "referredByName": "Andrés Gil",
+      "referredByPin": "BL-6621B",
+      "status": "disponible",
+      "personalMessage": "Amante del café de especialidad y juegos de mesa ☕🎲",
+      "currentSong": "Troye Sivan - Rush",
+      "allowWhatsAppBridge": true,
+      "distanceKm": 1.2,
+      "city": "Barquisimeto (Nueva Segovia)",
+      "stories": []
+    },
+    {
+      "id": "r-2",
+      "name": "Sofi Lunar",
+      "pronouns": "Ella",
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-3301S",
+      "referredByName": "Carolina Méndez",
+      "referredByPin": "BL-1100R",
+      "status": "en_fiesta",
+      "personalMessage": "Fotografía analógica, música pop y paseos en bici 🚲✨",
+      "currentSong": "Chappell Roan - Good Luck, Babe!",
+      "allowWhatsAppBridge": true,
+      "distanceKm": 2.4,
+      "city": "Barquisimeto (Av. Lara)",
+      "stories": []
+    },
+    {
+      "id": "r-3",
+      "name": "Leo Ramos",
+      "pronouns": "Elle",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-7711L",
+      "referredByName": "Val Martínez",
+      "referredByPin": "BL-4410A",
+      "status": "disponible",
+      "personalMessage": "Diseñadorx gráfico e ilustradorx queer. Siempre con té matcha 🍵",
+      "currentSong": "Boygenius - Not Strong Enough",
+      "allowWhatsAppBridge": false,
+      "distanceKm": 3.8,
+      "city": "Cabudare (Valle Hondo)",
+      "stories": []
+    },
+    {
+      "id": "r-4",
+      "name": "Dani Morales",
+      "pronouns": "Ella / Elle",
+      "avatar": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-2290D",
+      "referredByName": "Sam Ortiz",
+      "referredByPin": "BL-8871Z",
+      "status": "disponible",
+      "personalMessage": "Buscando grupo para salir a correr las mañanas 🏃‍♀️🌅",
+      "currentSong": "Dua Lipa - Training Season",
+      "allowWhatsAppBridge": true,
+      "distanceKm": 4.5,
+      "city": "Barquisimeto (Los Leones)",
+      "stories": []
+    },
+    {
+      "id": "r-5",
+      "name": "Camila Vega",
+      "pronouns": "Ella",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "pin": "BL-9011C",
+      "referredByName": "Alex Rivera",
+      "referredByPin": "BL-9842K",
+      "status": "ocupado",
+      "personalMessage": "Estudiante de medicina. Espacio seguro y apoyo mutuo 🩺💜",
+      "currentSong": "Phoebe Bridgers - Motion Sickness",
+      "allowWhatsAppBridge": true,
+      "distanceKm": 6.2,
+      "city": "Barquisimeto (El Parral)",
+      "stories": []
+    }
+  ],
+  "globalBroadcasts": [
+    {
+      "id": "bc-1",
+      "title": "Puntos de Encuentro Seguros en Barquisimeto",
+      "message": "Recordamos a toda la comunidad que los cafés aliados en Nueva Segovia y Los Leones cuentan con protocolos seguros LGBTIQA+ activos. ¡Cuídense entre todxs!",
+      "urgency": "informativo",
+      "sentAt": "Ayer, 18:30",
+      "authorName": "Equipo Superadmin Burbuja"
+    }
+  ]
+}

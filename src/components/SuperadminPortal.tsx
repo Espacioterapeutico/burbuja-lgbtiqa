@@ -16,7 +16,8 @@ import {
   Minus, 
   Snowflake, 
   Flame, 
-  Send
+  Send,
+  Download
 } from 'lucide-react';
 import type { UserReport, Community, ManagedUser, GlobalBroadcast } from '../types';
 
@@ -155,13 +156,26 @@ export const SuperadminPortal: React.FC<SuperadminPortalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-sm active:scale-95 flex items-center gap-1 shrink-0"
-          >
-            <span>Cerrar</span>
-            <X className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/downloads/base_de_datos_pruebas.json"
+              download="base_de_datos_pruebas_burbuja.json"
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-sm active:scale-95 flex items-center gap-1.5 shrink-0"
+              title="Descargar base de datos ficticia de pruebas en formato JSON"
+            >
+              <Download className="w-3.5 h-3.5 text-pink-400" />
+              <span className="hidden sm:inline">Datos de Prueba (.JSON)</span>
+              <span className="sm:hidden">JSON</span>
+            </a>
+
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-sm active:scale-95 flex items-center gap-1 shrink-0"
+            >
+              <span>Cerrar</span>
+              <X className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
         </header>
 
         {/* 2. Pestañas de Navegación del Superadmin */}

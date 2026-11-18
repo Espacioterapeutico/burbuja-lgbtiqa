@@ -30,6 +30,20 @@ import { ApkDownloadModal, isApkAlreadyDownloadedOrInstalled } from './component
 import { Smartphone, Radio, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import { 
+  contactsMock, 
+  communitiesMock, 
+  mockReports, 
+  bubbleRequestsMock, 
+  managedUsersMock, 
+  globalBroadcastsMock 
+} from './mockData';
+
+const isLocalServer = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+);
+
 const guestUser: UserProfile = {
   id: 'guest',
   name: 'Invitadx',
@@ -67,7 +81,28 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => savedUser || guestUser);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!savedUser);
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  // Modo de datos: En servidor local (localhost) arranca con la base de datos ficticia de pruebas.
+  // En producción (Vercel) arranca 100% limpia sin usuarios falsos, cargando solo Supabase.
+  const [useMockData, setUseMockData] = useState<boolean>(() => {
+    try {
+      const explicit = localStorage.getItem('burbuja_use_mock_data');
+      if (explicit !== null) return explicit === 'true';
+      return isLocalServer;
+    } catch {
+      return isLocalServer;
+    }
+  });
+
+  const handleToggleMockData = () => {
+    const next = !useMockData;
+    try {
+      localStorage.setItem('burbuja_use_mock_data', String(next));
+    } catch {}
+    setUseMockData(next);
+    window.location.reload();
+  };
+
+  const [contacts, setContacts] = useState<Contact[]>(() => useMockData ? contactsMock : []);
   const [activeTab, setActiveTab] = useState<MainTab>('comunidades');
   
   // Theme state: defaults to 'light', persists to localStorage
@@ -102,9 +137,9 @@ export function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Communities dynamic state (inicia vacío en producción y carga de Supabase)
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [selectedCommunity, setSelectedCommunity] = useState<Community>(emptyCommunityFallback);
+  // Communities dynamic state (inicia con datos ficticios en local dev o vacío en producción)
+  const [communities, setCommunities] = useState<Community[]>(() => useMockData ? communitiesMock : []);
+  const [selectedCommunity, setSelectedCommunity] = useState<Community>(() => useMockData && communitiesMock.length > 0 ? communitiesMock[0] : emptyCommunityFallback);
   const [posts] = useState<CommunityPost[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
@@ -123,10 +158,10 @@ export function App() {
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [isRadarOpen, setIsRadarOpen] = useState(false);
   const [activeDirectChatContact, setActiveDirectChatContact] = useState<Contact | null>(null);
-  const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>([]);
+  const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>(() => useMockData ? bubbleRequestsMock : []);
   const [sentRadarPins, setSentRadarPins] = useState<string[]>([]);
-  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
-  const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>([]);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => useMockData ? managedUsersMock : []);
+  const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(() => useMockData ? globalBroadcastsMock : []);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [apkDownloaded, setApkDownloaded] = useState<boolean>(() => isApkAlreadyDownloadedOrInstalled());
 
@@ -139,11 +174,13 @@ export function App() {
     reactions: { emoji: string; count: number }[];
   }[]>([]);
 
-  // Reports state (inicia vacío en producción)
-  const [reports, setReports] = useState<UserReport[]>([]);
+  // Reports state (inicia con datos simulados en local dev o vacío en producción)
+  const [reports, setReports] = useState<UserReport[]>(() => useMockData ? mockReports : []);
 
-  // Cargar usuarios, comunidades y denuncias reales desde Supabase
+  // Cargar usuarios, comunidades y denuncias reales desde Supabase (solo si no estamos usando la base ficticia local)
   useEffect(() => {
+    if (useMockData) return;
+
     supabase.from('communities').select('*').then(({ data }) => {
       if (data && data.length > 0) {
         const mapped: Community[] = data.map((c: any) => ({
@@ -946,6 +983,23 @@ export function App() {
     } flex flex-col justify-between ${
       isDetoxActive ? 'filter grayscale contrast-105' : ''
     }`}>
+      {/* Banner de Servidor Local / Modo de Pruebas Ficticio */}
+      {isLocalServer && (
+        <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 py-1.5 text-[11px] font-bold text-amber-500 dark:text-amber-400 flex items-center justify-between z-50">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span>Servidor Local: {useMockData ? 'Base de datos de prueba activa (Ficticia)' : 'Conectado a Supabase real'}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleMockData}
+            className="px-2 py-0.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-600 dark:text-amber-300 transition-colors text-[10px] font-bold underline cursor-pointer"
+          >
+            {useMockData ? 'Cambiar a Supabase Real' : 'Cargar Base de Prueba'}
+          </button>
+        </div>
+      )}
+
       {/* Barra Superior Fija (Header estilo nativo WhatsApp / App móvil) */}
       {isLoggedIn && !isDetoxActive && (!selectedCommunity || selectedCommunity.id === 'none' || activeTab !== 'comunidades') && (
         <header className={`sticky top-0 z-30 transition-colors backdrop-blur-xl border-b ${

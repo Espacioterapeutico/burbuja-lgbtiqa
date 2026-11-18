@@ -11,11 +11,11 @@ export const MSNToastContainer: React.FC<MSNToastContainerProps> = ({ toasts, on
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2.5 max-w-xs w-full pointer-events-none">
+    <div className="fixed top-3 inset-x-3 sm:left-auto sm:right-4 sm:w-80 z-50 flex flex-col gap-2 pointer-events-none pt-[max(env(safe-area-inset-top,0px),0.25rem)]">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="pointer-events-auto relative flex items-center gap-3 p-3 rounded-2xl bg-slate-900/95 border-2 border-pink-500/40 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom-5 duration-300"
+          className="pointer-events-auto relative flex items-center gap-3 p-3 rounded-2xl bg-slate-900/95 border-2 border-pink-500/50 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-6 duration-300"
         >
           {/* Nostalgic Glow bar */}
           <div className="absolute left-0 inset-y-0 w-1.5 bg-gradient-to-b from-pink-500 via-purple-500 to-cyan-400 rounded-l-2xl" />

@@ -14,18 +14,20 @@ import type {
   ManagedUser,
   GlobalBroadcast
 } from './types';
-import { DashboardView } from './components/DashboardView';
-import { CommunityView } from './components/CommunityView';
 import { DetoxStandbyView } from './components/DetoxStandbyView';
 import { MSNToastContainer } from './components/MSNToastContainer';
 import { GlobalModals } from './components/GlobalModals';
 import { ExploreCommunitiesModal } from './components/ExploreCommunitiesModal';
+import { BottomNavBar, type MainTab } from './components/BottomNavBar';
+import { CommunitiesTab } from './components/CommunitiesTab';
+import { ContactsTab } from './components/ContactsTab';
+import { ProfileTab } from './components/ProfileTab';
 import { playMsnOnlineChime } from './utils/sound';
 import { authService } from './services/authService';
 import { supabase } from './lib/supabase';
 import { Logo } from './components/Logo';
 import { ApkDownloadModal, isApkAlreadyDownloadedOrInstalled } from './components/ApkDownloadModal';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, Radio, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const guestUser: UserProfile = {
@@ -66,7 +68,7 @@ export function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!savedUser);
 
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [activeTab, setActiveTab] = useState<'burbuja' | 'comunidades' | 'perfil'>('burbuja');
+  const [activeTab, setActiveTab] = useState<MainTab>('comunidades');
   
   // Theme state: defaults to 'light', persists to localStorage
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -944,8 +946,39 @@ export function App() {
     } flex flex-col justify-between ${
       isDetoxActive ? 'filter grayscale contrast-105' : ''
     }`}>
+      {/* Barra Superior Fija (Header estilo nativo WhatsApp / App móvil) */}
+      {isLoggedIn && !isDetoxActive && (!selectedCommunity || selectedCommunity.id === 'none' || activeTab !== 'comunidades') && (
+        <header className={`sticky top-0 z-30 transition-colors backdrop-blur-xl border-b ${
+          theme === 'light'
+            ? 'bg-white/90 border-slate-200/90 shadow-sm'
+            : 'bg-slate-950/90 border-slate-800/80'
+        } pt-[max(env(safe-area-inset-top,0px),0.5rem)] px-4 py-2.5`}>
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <Logo size="sm" />
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsRadarOpen(true)}
+                className="p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-pink-500 transition-all active:scale-95 shadow-sm"
+                title="Radar de Cercanía"
+              >
+                <Radio className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSharePINOpen(true)}
+                className="p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-purple-500 transition-all active:scale-95 shadow-sm"
+                title="Compartir Pase de Invitación"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
+
       {/* Contenedor de Vistas Principales */}
-      <main className="flex-1 max-w-lg w-full mx-auto px-3.5 sm:px-4 pt-9 sm:pt-4 pb-6">
+      <main className="flex-1 max-w-md w-full mx-auto px-3.5 sm:px-4 pt-3 pb-6">
         {!isLoggedIn ? (
           <div className="py-12 px-4 text-center space-y-6">
             <div className="flex justify-center">
@@ -1002,59 +1035,23 @@ export function App() {
           <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
         ) : (
           <>
-            {activeTab === 'burbuja' && (
-              <DashboardView
-                currentUser={currentUser}
-                contacts={contacts}
-                communities={communities}
-                posts={posts}
-                myStories={myStories}
-                theme={theme}
-                onToggleTheme={handleToggleTheme}
-                onOpenCreateStory={() => setIsCreateStoryOpen(true)}
-                onViewMyStory={handleViewMyStory}
-                onSelectCommunity={(comm) => {
-                  handleSelectCommunity(comm);
-                  setActiveTab('comunidades');
-                }}
-                onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
-                onOpenExplore={() => setIsExploreOpen(true)}
-                onOpenRadar={() => setIsRadarOpen(true)}
-                onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
-                bubbleRequests={bubbleRequests}
-                onAcceptBubbleRequest={handleAcceptBubbleRequest}
-                onRejectBubbleRequest={handleRejectBubbleRequest}
-                onTogglePinCommunity={handleTogglePinCommunity}
-                onUpdateStatus={handleUpdateStatus}
-                onUpdatePersonalMessage={handleUpdatePersonalMessage}
-                onToggleWhatsAppBridge={handleToggleWhatsAppBridge}
-                onOpenSharePIN={() => setIsSharePINOpen(true)}
-                onOpenAddContact={() => setIsAddContactOpen(true)}
-                onViewStory={(contact) => setSelectedStoryContact(contact)}
-                onOpenReport={(contact) => setReportTargetContact(contact)}
-                onToggleBlockContact={handleToggleBlockContact}
-                onOpenProfile={() => setIsProfileOpen(true)}
-                onOpenSuperadmin={() => setIsSuperadminOpen(true)}
-                onOpenAuth={() => setIsAuthOpen(true)}
-                onLogout={handleLogout}
-                onDeleteAccount={handleDeleteAccountPermanently}
-              />
-            )}
-
+            {/* 1. PESTAÑA: COMUNIDADES (Inicio predeterminado) */}
             {activeTab === 'comunidades' && (
-              <CommunityView
+              <CommunitiesTab
                 communities={communities}
-                selectedCommunity={selectedCommunity}
-                onSelectCommunity={handleSelectCommunity}
                 posts={posts}
                 chatMessages={chatMessages}
+                selectedCommunity={selectedCommunity.id !== 'none' ? selectedCommunity : null}
+                onSelectCommunity={(comm) => setSelectedCommunity(comm || emptyCommunityFallback)}
                 onSendMessage={handleSendMessage}
                 currentUser={currentUser}
+                theme={theme}
                 isZumping={isZumping}
                 onTriggerZump={handleTriggerZump}
                 onOpenSharePIN={() => setIsSharePINOpen(true)}
-                onBack={() => setActiveTab('burbuja')}
                 onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+                onOpenExplore={() => setIsExploreOpen(true)}
+                onTogglePinCommunity={handleTogglePinCommunity}
                 onOpenManageCommunity={() => {
                   setManagingCommunity(selectedCommunity);
                   setIsCommunityRolesOpen(true);
@@ -1064,9 +1061,58 @@ export function App() {
                 onOpenReport={(contact) => setReportTargetContact(contact)}
               />
             )}
+
+            {/* 2. PESTAÑA: CONTACTOS / CHATS */}
+            {activeTab === 'contactos' && (
+              <ContactsTab
+                currentUser={currentUser}
+                contacts={contacts}
+                myStories={myStories}
+                theme={theme}
+                bubbleRequests={bubbleRequests}
+                onAcceptBubbleRequest={handleAcceptBubbleRequest}
+                onRejectBubbleRequest={handleRejectBubbleRequest}
+                onOpenAddContact={() => setIsAddContactOpen(true)}
+                onOpenRadar={() => setIsRadarOpen(true)}
+                onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
+                onViewStory={(contact) => setSelectedStoryContact(contact)}
+                onOpenCreateStory={() => setIsCreateStoryOpen(true)}
+                onViewMyStory={handleViewMyStory}
+                onOpenReport={(contact) => setReportTargetContact(contact)}
+                onToggleBlockContact={handleToggleBlockContact}
+              />
+            )}
+
+            {/* 3. PESTAÑA: PERFIL DEDICADO */}
+            {activeTab === 'perfil' && (
+              <ProfileTab
+                currentUser={currentUser}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                onOpenEditProfile={() => setIsProfileOpen(true)}
+                onOpenSharePIN={() => setIsSharePINOpen(true)}
+                onOpenSuperadmin={() => setIsSuperadminOpen(true)}
+                onUpdateStatus={handleUpdateStatus}
+                onUpdatePersonalMessage={handleUpdatePersonalMessage}
+                onToggleWhatsAppBridge={handleToggleWhatsAppBridge}
+                onLogout={handleLogout}
+                onDeleteAccount={handleDeleteAccountPermanently}
+              />
+            )}
           </>
         )}
       </main>
+
+      {/* Barra de Navegación Inferior Fija (Estilo WhatsApp) */}
+      {isLoggedIn && !isDetoxActive && (
+        <BottomNavBar
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          currentUser={currentUser}
+          pendingRequestsCount={bubbleRequests.length}
+          theme={theme}
+        />
+      )}
 
       {/* 3. Notificaciones Retro MSN */}
       {!isDetoxActive && (

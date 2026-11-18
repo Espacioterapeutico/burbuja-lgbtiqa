@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { Contact, UserProfile, ChatMessage } from '../types';
 import { playVoiceNoteAudio, stopVoiceNoteAudio } from '../utils/sound';
+import { authService } from '../services/authService';
 
 interface DirectChatModalProps {
   contact: Contact | null;
@@ -72,15 +73,20 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
 
   if (!isOpen || !contact) return null;
 
+  const isAdmin = authService.isSuperadmin(currentUser);
+  const isOfficialContact = contact.id === 'burbuja-oficial' || contact.pin === 'BL-94X7A' || contact.name === 'Burbuja LGBTIQ';
+
   const contactKey = contact.pin || contact.id;
   const currentChatHistory = messages[contactKey] || [
     {
       id: `welcome-${contact.id}`,
       communityId: 'direct',
-      senderName: contact.name,
-      senderAvatar: contact.avatar,
-      senderPronouns: contact.pronouns,
-      text: `¡Burbujas conectadas con éxito! 🫧 Conversación privada protegida punto a punto.`,
+      senderName: isOfficialContact ? 'Burbuja LGBTIQ' : contact.name,
+      senderAvatar: isOfficialContact ? '/logo.svg' : contact.avatar,
+      senderPronouns: isOfficialContact ? 'Oficial' : contact.pronouns,
+      text: isOfficialContact 
+        ? `¡Hola! Te damos la bienvenida al canal oficial de atención de Burbuja LGBTIQA+ 🫧 ¿En qué te podemos acompañar hoy?`
+        : `¡Burbujas conectadas con éxito! 🫧 Conversación privada protegida punto a punto.`,
       timestamp: 'Ahora'
     }
   ];
@@ -110,9 +116,9 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
     const audioMsg: ChatMessage = {
       id: `dm-voice-${Date.now()}`,
       communityId: 'direct',
-      senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
-      senderPronouns: currentUser.pronouns,
+      senderName: isAdmin ? 'Burbuja LGBTIQ' : currentUser.name,
+      senderAvatar: isAdmin ? '/logo.svg' : currentUser.avatar,
+      senderPronouns: isAdmin ? 'Oficial' : currentUser.pronouns,
       text: '🎙️ Nota de voz',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       audioUrl: 'mock-audio',
@@ -148,9 +154,9 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
     const newMsg: ChatMessage = {
       id: `dm-msg-${Date.now()}`,
       communityId: 'direct',
-      senderName: currentUser.name,
-      senderAvatar: currentUser.avatar,
-      senderPronouns: currentUser.pronouns,
+      senderName: isAdmin ? 'Burbuja LGBTIQ' : currentUser.name,
+      senderAvatar: isAdmin ? '/logo.svg' : currentUser.avatar,
+      senderPronouns: isAdmin ? 'Oficial' : currentUser.pronouns,
       text: inputMessage.trim() || (attachedPhoto ? '📷 Foto enviada' : ''),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       imageUrl: attachedPhoto || undefined
@@ -216,11 +222,20 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
 
           <div>
             <h3 className="font-bold text-xs text-white flex items-center gap-1.5">
-              <span>{contact.name}</span>
-              <span className="text-[10px] font-normal text-pink-300">({contact.pronouns})</span>
+              <span>{isOfficialContact ? 'Burbuja LGBTIQ' : contact.name}</span>
+              {isOfficialContact ? (
+                <span className="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 shadow-sm">
+                  <span>Oficial</span>
+                  <span>🫧</span>
+                </span>
+              ) : (
+                <span className="text-[10px] font-normal text-pink-300">({contact.pronouns})</span>
+              )}
             </h3>
             <p className="text-[10px] text-emerald-400 font-mono">
-              Burbujas Conectadas • PIN: {contact.pin}
+              {isOfficialContact 
+                ? 'Canal Oficial y Asistencia Comunitaria' 
+                : `Burbujas Conectadas • PIN: ${contact.pin}`}
             </p>
           </div>
         </div>
@@ -240,12 +255,12 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
             🔒 Chat 1 a 1 protegido bajo consentimiento mutuo
           </span>
           <p className="text-[10px] text-slate-500 max-w-xs mx-auto">
-            Los mensajes, fotos y audios en este canal solo son visibles entre tú y {contact.name}.
+            Los mensajes, fotos y audios en este canal solo son visibles entre tú y {isOfficialContact ? 'Burbuja LGBTIQ' : contact.name}.
           </p>
         </div>
 
         {currentChatHistory.map((msg) => {
-          const isMe = msg.senderName === currentUser.name;
+          const isMe = msg.senderName === currentUser.name || (isAdmin && msg.senderName === 'Burbuja LGBTIQ');
 
           return (
             <div

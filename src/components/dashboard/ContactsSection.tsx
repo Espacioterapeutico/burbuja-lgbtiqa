@@ -262,8 +262,13 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                 {/* Info del Contacto */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-100 group-hover:text-pink-300 transition-colors truncate">
+                    <span className="font-bold text-sm text-slate-100 group-hover:text-pink-300 transition-colors truncate flex items-center gap-1.5">
                       {contact.name}
+                      {(contact.id === 'burbuja-oficial' || contact.pin === 'BL-94X7A' || contact.name === 'Burbuja LGBTIQ') && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold uppercase tracking-wider">
+                          Oficial 🫧
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] text-pink-300 font-semibold">{contact.pronouns}</span>
                     <StatusBadge 

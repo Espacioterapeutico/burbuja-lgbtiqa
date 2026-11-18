@@ -26,6 +26,9 @@ interface ContactsTabProps {
   onViewMyStory: () => void;
   onOpenReport: (contact: Contact) => void;
   onToggleBlockContact: (contact: Contact, reason?: string) => void;
+  officialContact?: Contact;
+  isAdmin?: boolean;
+  onOpenCreateOfficialStory?: () => void;
 }
 
 export const ContactsTab: React.FC<ContactsTabProps> = ({
@@ -43,7 +46,10 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
   onOpenCreateStory,
   onViewMyStory,
   onOpenReport,
-  onToggleBlockContact
+  onToggleBlockContact,
+  officialContact,
+  isAdmin = false,
+  onOpenCreateOfficialStory
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -102,6 +108,9 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
           onViewMyStory={onViewMyStory}
           onOpenCreateStory={onOpenCreateStory}
           onViewStory={onViewStory}
+          officialContact={officialContact}
+          isAdmin={isAdmin}
+          onOpenCreateOfficialStory={onOpenCreateOfficialStory}
         />
 
         {/* 3. Buscador de Contactos */}

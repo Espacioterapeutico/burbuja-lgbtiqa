@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, MessageCircle } from 'lucide-react';
+import { Compass, MessageCircle, ShieldCheck } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 export type MainTab = 'comunidades' | 'contactos' | 'perfil';
@@ -10,6 +10,8 @@ interface BottomNavBarProps {
   currentUser: UserProfile;
   pendingRequestsCount?: number;
   theme?: 'light' | 'dark';
+  isAdmin?: boolean;
+  onOpenAdminMenu?: () => void;
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
@@ -17,7 +19,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   onChangeTab,
   currentUser,
   pendingRequestsCount = 0,
-  theme = 'light'
+  theme = 'light',
+  isAdmin = false,
+  onOpenAdminMenu
 }) => {
   return (
     <nav
@@ -86,7 +90,30 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           </span>
         </button>
 
-        {/* 3. PERFIL */}
+        {/* 3. BOTÓN CENTRAL: MENÚ ADMIN (Para Administradores) */}
+        {isAdmin && onOpenAdminMenu && (
+          <button
+            type="button"
+            onClick={onOpenAdminMenu}
+            className="flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all active:scale-90 group relative"
+            title="Abrir Menú de Control Admin"
+          >
+            <div className="relative">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-600 via-purple-600 to-cyan-500 p-0.5 shadow-lg shadow-pink-500/25 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full rounded-[14px] bg-slate-950 flex items-center justify-center text-white">
+                  <ShieldCheck className="w-5 h-5 text-pink-400 group-hover:scale-110 transition-transform" />
+                </div>
+              </div>
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400 ring-2 ring-white dark:ring-slate-950 animate-ping pointer-events-none" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-cyan-400 ring-2 ring-white dark:ring-slate-950 pointer-events-none" />
+            </div>
+            <span className="text-[10px] font-black tracking-tight text-pink-600 dark:text-pink-400 mt-0.5">
+              Admin
+            </span>
+          </button>
+        )}
+
+        {/* 4. PERFIL */}
         <button
           type="button"
           onClick={() => onChangeTab('perfil')}

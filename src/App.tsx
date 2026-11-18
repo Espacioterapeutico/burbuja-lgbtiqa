@@ -27,6 +27,8 @@ import { authService } from './services/authService';
 import { supabase } from './lib/supabase';
 import { Logo } from './components/Logo';
 import { ApkDownloadModal } from './components/ApkDownloadModal';
+import { AdminBottomMenu } from './components/AdminBottomMenu';
+import { BroadcastModal } from './components/BroadcastModal';
 import { Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -163,6 +165,50 @@ export function App() {
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => useMockData ? managedUsersMock : []);
   const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(() => useMockData ? globalBroadcastsMock : []);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [isOfficialStoryCreation, setIsOfficialStoryCreation] = useState(false);
+
+  // Historias oficiales de Burbuja LGBTIQ (Visibles para toda la comunidad sin necesidad de agregarlo)
+  const [officialStories, setOfficialStories] = useState<{
+    id: string;
+    mediaUrl: string;
+    caption: string;
+    timestamp: string;
+    reactions: { emoji: string; count: number }[];
+  }[]>(() => {
+    try {
+      const saved = localStorage.getItem('burbuja_official_stories');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'official-welcome-1',
+        mediaUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=800&q=80',
+        caption: '🫧 ¡Bienvenidos a Burbuja LGBTIQA+! Espacio seguro y libre de discriminación para toda nuestra comunidad en Barquisimeto & Lara. 🌈💜',
+        timestamp: 'Oficial',
+        reactions: [
+          { emoji: '🫧', count: 32 },
+          { emoji: '💜', count: 48 },
+          { emoji: '🌈', count: 65 }
+        ]
+      }
+    ];
+  });
+
+  const officialBurbujaContact: Contact = {
+    id: 'burbuja-oficial',
+    name: 'Burbuja LGBTIQ',
+    pronouns: 'Oficial',
+    avatar: '/logo.svg',
+    pin: 'BL-94X7A',
+    status: 'disponible',
+    personalMessage: 'Canal oficial de atención, soporte y bienvenida comunitaria 🫧🌈',
+    currentSong: '',
+    allowWhatsAppBridge: true,
+    city: 'Barquisimeto & Lara',
+    stories: officialStories
+  };
 
   // My stories state
   const [myStories, setMyStories] = useState<{
@@ -753,7 +799,7 @@ export function App() {
     setTimeout(() => setIsZumping(false), 700);
   };
 
-  const handlePublishMyStory = (mediaUrl: string, caption: string) => {
+  const handlePublishMyStory = (mediaUrl: string, caption: string, isOfficial?: boolean) => {
     const newStory = {
       id: `story-${Date.now()}`,
       mediaUrl,
@@ -761,13 +807,31 @@ export function App() {
       timestamp: 'Justo ahora',
       reactions: []
     };
-    setMyStories(prev => [newStory, ...prev]);
-    triggerMsnToast({
-      id: `toast-story-${Date.now()}`,
-      title: 'Historia Publicada',
-      message: 'Tu historia de 24h ya está visible para tu red.',
-      avatar: currentUser.avatar
-    });
+
+    if (isOfficial) {
+      setOfficialStories(prev => {
+        const updated = [newStory, ...prev];
+        try {
+          localStorage.setItem('burbuja_official_stories', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      setIsOfficialStoryCreation(false);
+      triggerMsnToast({
+        id: `toast-off-story-${Date.now()}`,
+        title: '📢 Estado Oficial Publicado',
+        message: 'Tu estado ahora es visible para toda la comunidad, te tengan o no agregado.',
+        avatar: '/logo.svg'
+      });
+    } else {
+      setMyStories(prev => [newStory, ...prev]);
+      triggerMsnToast({
+        id: `toast-story-${Date.now()}`,
+        title: 'Historia Publicada',
+        message: 'Tu historia de 24h ya está visible para tu red.',
+        avatar: currentUser.avatar
+      });
+    }
   };
 
   const handleViewMyStory = () => {
@@ -1124,7 +1188,7 @@ export function App() {
             {activeTab === 'contactos' && (
               <ContactsTab
                 currentUser={currentUser}
-                contacts={contacts}
+                contacts={contacts.some(c => c.id === 'burbuja-oficial' || c.name === 'Burbuja LGBTIQ') ? contacts : [officialBurbujaContact, ...contacts]}
                 myStories={myStories}
                 theme={theme}
                 bubbleRequests={bubbleRequests}
@@ -1134,10 +1198,19 @@ export function App() {
                 onOpenRadar={() => setIsRadarOpen(true)}
                 onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
                 onViewStory={(contact) => setSelectedStoryContact(contact)}
-                onOpenCreateStory={() => setIsCreateStoryOpen(true)}
+                onOpenCreateStory={() => {
+                  setIsOfficialStoryCreation(false);
+                  setIsCreateStoryOpen(true);
+                }}
                 onViewMyStory={handleViewMyStory}
                 onOpenReport={(contact) => setReportTargetContact(contact)}
                 onToggleBlockContact={handleToggleBlockContact}
+                officialContact={officialBurbujaContact}
+                isAdmin={authService.isSuperadmin(currentUser)}
+                onOpenCreateOfficialStory={() => {
+                  setIsOfficialStoryCreation(true);
+                  setIsCreateStoryOpen(true);
+                }}
               />
             )}
 
@@ -1169,6 +1242,8 @@ export function App() {
           currentUser={currentUser}
           pendingRequestsCount={bubbleRequests.length}
           theme={theme}
+          isAdmin={authService.isSuperadmin(currentUser)}
+          onOpenAdminMenu={() => setIsAdminMenuOpen(true)}
         />
       )}
 
@@ -1220,8 +1295,13 @@ export function App() {
         onCloseAddContact={() => setIsAddContactOpen(false)}
         onAddContact={handleAddContact}
         onCloseStoryViewer={() => setSelectedStoryContact(null)}
-        onCloseCreateStory={() => setIsCreateStoryOpen(false)}
+        onCloseCreateStory={() => {
+          setIsCreateStoryOpen(false);
+          setIsOfficialStoryCreation(false);
+        }}
         onPublishStory={handlePublishMyStory}
+        isAdmin={authService.isSuperadmin(currentUser)}
+        isOfficialStoryCreation={isOfficialStoryCreation}
         onCloseReport={() => setReportTargetContact(null)}
         onSubmitReport={handleSubmitReport}
         onCloseAuth={() => setIsAuthOpen(false)}
@@ -1274,6 +1354,36 @@ export function App() {
       <ApkDownloadModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
+      />
+
+      {/* Menú Inferior de Control Admin */}
+      <AdminBottomMenu
+        isOpen={isAdminMenuOpen}
+        onClose={() => setIsAdminMenuOpen(false)}
+        onOpenCreateCommunity={() => setIsCreateCommunityOpen(true)}
+        onOpenBroadcast={() => setIsBroadcastModalOpen(true)}
+        onOpenCreateOfficialStory={() => {
+          setIsOfficialStoryCreation(true);
+          setIsCreateStoryOpen(true);
+        }}
+        onOpenContactsAsAdmin={() => {
+          setActiveTab('contactos');
+          triggerMsnToast({
+            id: `toast-admin-chat-${Date.now()}`,
+            title: 'Modo Burbuja LGBTIQ Activo',
+            message: 'Tus chats se enviarán con la identidad oficial de la plataforma.',
+            avatar: '/logo.svg'
+          });
+        }}
+        onOpenSuperadmin={() => setIsSuperadminOpen(true)}
+        theme={theme}
+      />
+
+      {/* Modal de Transmisión de Difusión Global */}
+      <BroadcastModal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+        onSendBroadcast={handleSendBroadcast}
       />
     </div>
   );

@@ -15,6 +15,9 @@ interface StoriesFeedBarProps {
   onViewMyStory: () => void;
   onOpenCreateStory: () => void;
   onViewStory: (contact: Contact) => void;
+  officialContact?: Contact;
+  isAdmin?: boolean;
+  onOpenCreateOfficialStory?: () => void;
 }
 
 export const StoriesFeedBar: React.FC<StoriesFeedBarProps> = ({
@@ -23,7 +26,10 @@ export const StoriesFeedBar: React.FC<StoriesFeedBarProps> = ({
   myStories,
   onViewMyStory,
   onOpenCreateStory,
-  onViewStory
+  onViewStory,
+  officialContact,
+  isAdmin = false,
+  onOpenCreateOfficialStory
 }) => {
   return (
     <div className="space-y-2">
@@ -71,6 +77,54 @@ export const StoriesFeedBar: React.FC<StoriesFeedBarProps> = ({
           </div>
           <span className="text-[11px] font-semibold text-slate-200 max-w-[68px] truncate">
             Mis historias
+          </span>
+        </div>
+
+        {/* Official Story: "Burbuja LGBTIQ (Oficial)" - Visible para TODOS sin necesidad de agregarlo */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (officialContact && officialContact.stories && officialContact.stories.length > 0) {
+                  onViewStory(officialContact);
+                } else if (isAdmin && onOpenCreateOfficialStory) {
+                  onOpenCreateOfficialStory();
+                }
+              }}
+              className={`p-0.5 rounded-full transition-transform hover:scale-105 active:scale-95 group focus:outline-none ${
+                officialContact && officialContact.stories && officialContact.stories.length > 0
+                  ? 'bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-0.5 shadow-md shadow-pink-900/30 ring-2 ring-pink-500/50'
+                  : 'border-2 border-pink-500/50 p-0.5'
+              }`}
+              title="Estado Oficial de Burbuja LGBTIQ+ (Visible para todos)"
+            >
+              <div className="p-0.5 bg-slate-950 rounded-full flex items-center justify-center">
+                <img
+                  src={officialContact?.avatar || '/logo.svg'}
+                  alt="Burbuja LGBTIQ"
+                  className="w-13 h-13 rounded-full object-cover p-1 bg-slate-900"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.svg';
+                  }}
+                />
+              </div>
+            </button>
+            {isAdmin && onOpenCreateOfficialStory && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenCreateOfficialStory();
+                }}
+                className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 rounded-full flex items-center justify-center text-white text-[11px] font-black shadow-md border-2 border-slate-950 transition-transform active:scale-90 cursor-pointer"
+                title="Subir nuevo estado oficial para toda la comunidad"
+              >
+                +
+              </button>
+            )}
+          </div>
+          <span className="text-[11px] font-bold text-pink-400 max-w-[72px] truncate flex items-center gap-0.5">
+            <span>Burbuja</span>
+            <span className="text-[9px]">🫧</span>
           </span>
         </div>
 

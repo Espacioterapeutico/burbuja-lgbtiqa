@@ -6,7 +6,9 @@ import { storageService } from '../services/storageService';
 interface CreateStoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPublishStory: (mediaUrl: string, caption: string) => void;
+  onPublishStory: (mediaUrl: string, caption: string, isOfficial?: boolean) => void;
+  isAdmin?: boolean;
+  defaultIsOfficial?: boolean;
 }
 
 const SAMPLE_STORY_PRESETS = [
@@ -31,13 +33,16 @@ const SAMPLE_STORY_PRESETS = [
 export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
   isOpen,
   onClose,
-  onPublishStory
+  onPublishStory,
+  isAdmin = false,
+  defaultIsOfficial = false
 }) => {
   const [selectedMedia, setSelectedMedia] = useState(SAMPLE_STORY_PRESETS[0].url);
   const [caption, setCaption] = useState('');
   const [customUrl, setCustomUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [compressionBadge, setCompressionBadge] = useState<string | null>(null);
+  const [isOfficialStory, setIsOfficialStory] = useState(defaultIsOfficial);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
@@ -77,7 +82,7 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
       colors: ['#ec4899', '#a855f7', '#06b6d4', '#eab308']
     });
 
-    onPublishStory(finalUrl, finalCaption);
+    onPublishStory(finalUrl, finalCaption, isOfficialStory);
     onClose();
   };
 
@@ -196,6 +201,35 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
             />
           </div>
 
+          {/* Toggle de Estado Oficial para ADMIN */}
+          {isAdmin && (
+            <div 
+              onClick={() => setIsOfficialStory(!isOfficialStory)}
+              className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                isOfficialStory
+                  ? 'bg-cyan-950/40 border-cyan-500/60 ring-2 ring-cyan-500/30'
+                  : 'bg-slate-950 border-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">📢</span>
+                <div>
+                  <span className="text-xs font-extrabold text-white block">
+                    Publicar como Estado Oficial
+                  </span>
+                  <span className="text-[10px] text-cyan-300 block">
+                    Todos los usuarios lo verán, así no te tengan agregado
+                  </span>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
+                isOfficialStory ? 'bg-cyan-500 border-cyan-400 text-slate-950' : 'border-slate-700 bg-slate-900'
+              }`}>
+                {isOfficialStory && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              </div>
+            </div>
+          )}
+
           <p className="text-[10px] text-slate-500 leading-tight">
             🔒 Las fotos se comprimen automáticamente en WebP ultraligero antes de subirse.
           </p>
@@ -203,10 +237,14 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
           <button
             type="submit"
             disabled={isUploading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-500 hover:from-pink-500 hover:to-cyan-400 disabled:opacity-50 text-white font-bold text-xs shadow-lg transition-transform active:scale-95"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-500 hover:from-pink-500 hover:to-cyan-400 disabled:opacity-50 text-white font-bold text-xs shadow-lg transition-transform active:scale-95 cursor-pointer"
           >
             <Send className="w-4 h-4" />
-            <span>Publicar en mi Historia (24h)</span>
+            <span>
+              {isOfficialStory 
+                ? 'Publicar Estado Oficial (Para Todos)' 
+                : 'Publicar en mi Historia (24h)'}
+            </span>
           </button>
         </form>
       </div>

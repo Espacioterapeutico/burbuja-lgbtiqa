@@ -59,7 +59,9 @@ interface GlobalModalsProps {
   onAddContact: (contact: Contact) => void;
   onCloseStoryViewer: () => void;
   onCloseCreateStory: () => void;
-  onPublishStory: (mediaUrl: string, caption: string) => void;
+  onPublishStory: (mediaUrl: string, caption: string, isOfficial?: boolean) => void;
+  isAdmin?: boolean;
+  isOfficialStoryCreation?: boolean;
   onCloseReport: () => void;
   onSubmitReport: (report: Omit<UserReport, 'id' | 'timestamp' | 'status' | 'inviterAlerted'>) => void;
   onCloseAuth: () => void;
@@ -127,6 +129,8 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
   onCloseStoryViewer,
   onCloseCreateStory,
   onPublishStory,
+  isAdmin = false,
+  isOfficialStoryCreation = false,
   onCloseReport,
   onSubmitReport,
   onCloseAuth,
@@ -195,6 +199,8 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
         isOpen={isCreateStoryOpen}
         onClose={onCloseCreateStory}
         onPublishStory={onPublishStory}
+        isAdmin={isAdmin}
+        defaultIsOfficial={isOfficialStoryCreation}
       />
 
       {/* Report User Modal */}

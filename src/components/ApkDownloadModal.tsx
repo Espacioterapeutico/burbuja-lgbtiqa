@@ -12,12 +12,31 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+export function isApkAlreadyDownloadedOrInstalled(): boolean {
+  try {
+    if (localStorage.getItem('burbuja_apk_downloaded') === 'true') return true;
+    const ua = navigator.userAgent || '';
+    if (ua.includes('; wv)') || ua.includes('Version/4.0 Chrome/') || ua.includes('BurbujaAndroid')) {
+      return true;
+    }
+    if (window.matchMedia?.('(display-mode: standalone)').matches) {
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
 interface ApkDownloadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onDownloaded?: () => void;
 }
 
-export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onClose }) => {
+export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({
+  isOpen,
+  onClose,
+  onDownloaded
+}) => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [downloadStarted, setDownloadStarted] = useState(false);
 
@@ -30,16 +49,23 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
       origin: { y: 0.6 }
     });
 
-    setDownloadStarted(true);
+    try {
+      localStorage.setItem('burbuja_apk_downloaded', 'true');
+    } catch {}
 
-    // Creamos enlace de descarga directa del APK
-    // Si aún no está el binario compilado en /downloads, apuntamos a la descarga o descarga PWA
+    setDownloadStarted(true);
+    onDownloaded?.();
+
     const link = document.createElement('a');
     link.href = '/downloads/burbuja-lgbtiqa.apk';
     link.download = 'burbuja-lgbtiqa.apk';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    setTimeout(() => {
+      onClose();
+    }, 1500);
   };
 
   return (
@@ -123,9 +149,6 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({ isOpen, onCl
               </p>
               <p>
                 <strong>Paso 2:</strong> Toca <strong>Instalar</strong>. Si Android te muestra una advertencia de <em>"Fuentes desconocidas"</em>, entra a <em>Ajustes</em> y activa <em>"Permitir desde esta fuente"</em>.
-              </p>
-              <p className="text-slate-400">
-                💡 <em>También puedes instalarla como Web App (PWA) tocando los tres puntos (⋮) de tu navegador móvil y seleccionando "Instalar aplicación".</em>
               </p>
             </div>
           )}

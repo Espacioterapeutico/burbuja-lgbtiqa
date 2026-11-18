@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   MapPin, 
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { UserProfile, Contact } from '../types';
-import { radarUsersMock } from '../mockData';
+import { supabase } from '../lib/supabase';
 import { STATUS_CONFIG } from './StatusBadge';
 import { SingleBubbleIcon } from './CommunityView';
 
@@ -38,13 +38,42 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
   const [introMessage, setIntroMessage] = useState('');
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [nearbyUsers, setNearbyUsers] = useState<(Contact & { distanceKm: number; city: string })[]>([]);
+
+  useEffect(() => {
+    if (!isOpen || !currentUser.radarVisible) return;
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('radar_visible', true)
+      .neq('id', currentUser.id)
+      .then(({ data }) => {
+        if (data) {
+          setNearbyUsers(
+            data.map((p) => ({
+              id: p.id,
+              name: p.name,
+              pronouns: p.pronouns,
+              avatar: p.avatar,
+              pin: p.pin,
+              status: (p.status || 'disponible') as any,
+              personalMessage: p.personal_message || '',
+              currentSong: p.current_song || '',
+              allowWhatsAppBridge: !!p.allow_whatsapp_bridge,
+              distanceKm: 1.5,
+              city: p.city || 'Barquisimeto'
+            }))
+          );
+        }
+      });
+  }, [isOpen, currentUser.radarVisible, currentUser.id]);
 
   if (!isOpen) return null;
 
   const isRadarActive = !!currentUser.radarVisible;
 
   // Ordenar personas por distancia más cercana primero
-  const sortedNearbyUsers = [...radarUsersMock].sort((a, b) => a.distanceKm - b.distanceKm);
+  const sortedNearbyUsers = [...nearbyUsers].sort((a, b) => a.distanceKm - b.distanceKm);
 
   const handleOpenConnectModal = (user: Contact & { distanceKm: number; city: string }) => {
     setSelectedBubbleUser(user);
@@ -180,6 +209,11 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
             </div>
 
             {/* Cuadrícula / Constelación de Burbujas Flotantes */}
+            {sortedNearbyUsers.length === 0 && (
+              <div className="py-10 text-center text-slate-400 text-xs rounded-2xl bg-slate-900/40 border border-slate-800/80 p-4">
+                No hay otras burbujas activas cerca en este momento.
+              </div>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
               {sortedNearbyUsers.map((user) => {
                 const isSent = sentRequestsPins.includes(user.pin);

@@ -36,7 +36,6 @@ import confetti from 'canvas-confetti';
 import type { Community, CommunityPost, ChatMessage, UserProfile, CommunityRole, Contact } from '../types';
 import { playZumpSound, playVoiceNoteAudio, stopVoiceNoteAudio } from '../utils/sound';
 import { build7525Feed } from '../utils/feedAlgorithm';
-import { contactsMock } from '../mockData';
 
 interface CommunityViewProps {
   communities: Community[];
@@ -548,21 +547,19 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
 
   // Abrir Perfil al hacer clic en avatar o nombre en el chat
   const handleOpenUserProfile = (senderName: string, senderAvatar: string, senderPronouns: string) => {
-    // Buscar en contactos o crear perfil sintético representativo
-    const foundContact = contactsMock.find(c => c.name.toLowerCase() === senderName.toLowerCase());
     const memberRecord = selectedCommunity.members?.find(m => m.userName.toLowerCase() === senderName.toLowerCase());
 
-    const profileTarget: Contact = foundContact || {
+    const profileTarget: Contact = {
       id: memberRecord?.userId || `user-${Date.now()}`,
       name: senderName,
       pronouns: senderPronouns || 'Elle',
       avatar: senderAvatar,
-      pin: memberRecord?.userPin || 'BL-7740Q',
-      referredByName: 'Carolina Méndez',
-      referredByPin: 'BL-1100R',
+      pin: memberRecord?.userPin || '',
+      referredByName: '',
+      referredByPin: '',
       status: 'disponible',
-      personalMessage: 'Miembro activo de esta comunidad 🫧',
-      currentSong: 'Troye Sivan - Rush',
+      personalMessage: 'Miembro de esta comunidad 🫧',
+      currentSong: '',
       allowWhatsAppBridge: false,
       stories: []
     };

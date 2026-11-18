@@ -14,13 +14,6 @@ import type {
   ManagedUser,
   GlobalBroadcast
 } from './types';
-import { 
-  mockReports,
-  managedUsersMock,
-  globalBroadcastsMock,
-  chatMessagesMock,
-  contactsMock
-} from './mockData';
 import { DashboardView } from './components/DashboardView';
 import { CommunityView } from './components/CommunityView';
 import { DetoxStandbyView } from './components/DetoxStandbyView';
@@ -29,8 +22,9 @@ import { GlobalModals } from './components/GlobalModals';
 import { ExploreCommunitiesModal } from './components/ExploreCommunitiesModal';
 import { playMsnOnlineChime } from './utils/sound';
 import { authService } from './services/authService';
+import { supabase } from './lib/supabase';
 import { Logo } from './components/Logo';
-import { ApkDownloadModal } from './components/ApkDownloadModal';
+import { ApkDownloadModal, isApkAlreadyDownloadedOrInstalled } from './components/ApkDownloadModal';
 import { Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -51,22 +45,20 @@ const guestUser: UserProfile = {
   reputationScore: 100
 };
 
-const initialDefaultCommunities: Community[] = [
-  {
-    id: 'comm-bqto',
-    name: 'Gays Barquisimeto & Lara',
-    description: 'Comunidad local para encuentros seguros, planes culturales en Barquisimeto, rutas de café y apoyo en el estado Lara.',
-    category: 'Encuentros & Cultura',
-    icon: '🌆',
-    isPinned: true,
-    isJoined: true,
-    isClosed: false,
-    memberCount: 1,
-    activeNow: 1,
-    tags: ['Barquisimeto', 'Lara', 'Cultura', 'Seguridad'],
-    members: []
-  }
-];
+const emptyCommunityFallback: Community = {
+  id: 'none',
+  name: 'Sin comunidad seleccionada',
+  description: '',
+  category: 'General',
+  icon: '🫧',
+  isPinned: false,
+  isJoined: false,
+  isClosed: false,
+  memberCount: 0,
+  activeNow: 0,
+  tags: [],
+  members: []
+};
 
 export function App() {
   const savedUser = authService.getSavedUser();
@@ -108,9 +100,9 @@ export function App() {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Communities dynamic state
-  const [communities, setCommunities] = useState<Community[]>(initialDefaultCommunities);
-  const [selectedCommunity, setSelectedCommunity] = useState<Community>(initialDefaultCommunities[0]);
+  // Communities dynamic state (inicia vacío en producción y carga de Supabase)
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [selectedCommunity, setSelectedCommunity] = useState<Community>(emptyCommunityFallback);
   const [posts] = useState<CommunityPost[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
@@ -131,9 +123,10 @@ export function App() {
   const [activeDirectChatContact, setActiveDirectChatContact] = useState<Contact | null>(null);
   const [bubbleRequests, setBubbleRequests] = useState<BubbleConnectionRequest[]>([]);
   const [sentRadarPins, setSentRadarPins] = useState<string[]>([]);
-  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(managedUsersMock);
-  const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(globalBroadcastsMock);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
+  const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>([]);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
+  const [apkDownloaded, setApkDownloaded] = useState<boolean>(() => isApkAlreadyDownloadedOrInstalled());
 
   // My stories state
   const [myStories, setMyStories] = useState<{
@@ -144,8 +137,78 @@ export function App() {
     reactions: { emoji: string; count: number }[];
   }[]>([]);
 
-  // Reports state
-  const [reports, setReports] = useState<UserReport[]>(mockReports);
+  // Reports state (inicia vacío en producción)
+  const [reports, setReports] = useState<UserReport[]>([]);
+
+  // Cargar usuarios, comunidades y denuncias reales desde Supabase
+  useEffect(() => {
+    supabase.from('communities').select('*').then(({ data }) => {
+      if (data && data.length > 0) {
+        const mapped: Community[] = data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description || '',
+          category: c.category || 'General',
+          icon: c.icon || '🫧',
+          isPinned: false,
+          isJoined: true,
+          isClosed: !!c.is_closed,
+          isFrozen: !!c.is_frozen,
+          creatorId: c.creator_id,
+          memberCount: 1,
+          activeNow: 1,
+          tags: [c.category || 'General'],
+          members: []
+        }));
+        setCommunities(mapped);
+        setSelectedCommunity(mapped[0]);
+      }
+    });
+
+    supabase.from('profiles').select('*').then(({ data }) => {
+      if (data) {
+        setManagedUsers(
+          data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            pronouns: p.pronouns || 'Elle',
+            avatar: p.avatar || '',
+            pin: p.pin,
+            cedulaHash: (p.cedula_hash || '').split('::')[0],
+            referredByPin: p.referred_by_pin || 'RAIZ',
+            referredByName: p.referred_by_name || 'Fundador',
+            invitationsRemaining: p.invitations_remaining ?? 3,
+            joinedDate: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Reciente',
+            isEnabled: p.is_enabled !== false,
+            city: p.city || 'Barquisimeto',
+            reportsReceivedCount: 0,
+            communitiesCreated: []
+          }))
+        );
+      }
+    });
+
+    supabase.from('reports').select('*').then(({ data }) => {
+      if (data) {
+        setReports(
+          data.map((r: any) => ({
+            id: r.id,
+            reportedUserId: r.reported_user_id,
+            reportedUserName: r.reported_user_name,
+            reportedUserAvatar: r.reported_user_avatar || '',
+            reportedUserPin: r.reported_user_pin,
+            inviterPin: r.inviter_pin || '',
+            inviterName: r.inviter_name || '',
+            reason: r.reason,
+            detail: r.detail,
+            timestamp: r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Reciente',
+            status: r.status || 'pendiente',
+            inviterAlerted: !!r.inviter_alerted
+          }))
+        );
+      }
+    });
+  }, [isLoggedIn, isSuperadminOpen]);
 
   // MSN Toasts state
   const [toasts, setToasts] = useState<MSNToast[]>([]);
@@ -222,24 +285,49 @@ export function App() {
 
   const handleSelectCommunity = (comm: Community) => {
     setSelectedCommunity(comm);
-    setChatMessages(chatMessagesMock[comm.id] || [
-      {
-        id: `welcome-${comm.id}`,
-        communityId: comm.id,
-        senderName: 'Burbuja Bot',
-        senderAvatar: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
-        senderPronouns: 'Comunidad',
-        text: `¡Bienvenidxs al espacio grupal de ${comm.name}! Recuerda mantener la empatía y respeto mutuo.`,
-        timestamp: 'Ahora',
-        isModerator: true,
-      }
-    ]);
+    supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('community_id', comm.id)
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setChatMessages(
+            data.map((m: any) => ({
+              id: m.id,
+              communityId: m.community_id,
+              senderName: m.sender_name,
+              senderAvatar: m.sender_avatar || '',
+              senderPronouns: m.sender_pronouns || '',
+              text: m.text,
+              timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Ahora',
+              isZump: !!m.is_zump,
+              isModerator: !!m.is_moderator,
+              audioUrl: m.audio_url,
+              audioDurationSeconds: m.audio_duration_seconds,
+              imageUrl: m.image_url
+            }))
+          );
+        } else {
+          setChatMessages([]);
+        }
+      });
   };
 
   const handleCreateCommunity = (newCommunity: Community) => {
     setCommunities(prev => [newCommunity, ...prev]);
     setSelectedCommunity(newCommunity);
     setActiveTab('comunidades');
+    supabase.from('communities').insert([{
+      id: newCommunity.id,
+      name: newCommunity.name,
+      description: newCommunity.description,
+      category: newCommunity.category,
+      is_closed: !!newCommunity.isClosed,
+      pin_code: newCommunity.pinCode || null,
+      icon: newCommunity.icon || '🫧',
+      creator_id: currentUser.id
+    }]).then(() => {});
     triggerMsnToast({
       id: `toast-comm-${Date.now()}`,
       title: '¡Comunidad Creada!',
@@ -466,8 +554,7 @@ export function App() {
   };
 
   const handleAddMemberByPin = (communityId: string, pin: string): boolean => {
-    const contactMatch = contacts.find(c => c.pin.toUpperCase() === pin.toUpperCase()) ||
-      contactsMock.find(c => c.pin.toUpperCase() === pin.toUpperCase());
+    const contactMatch = contacts.find(c => c.pin.toUpperCase() === pin.toUpperCase());
     if (!contactMatch) return false;
 
     let added = false;
@@ -896,14 +983,16 @@ export function App() {
                 Iniciar Sesión / Crear Cuenta
               </button>
 
-              <button
-                type="button"
-                onClick={() => setIsApkModalOpen(true)}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-              >
-                <Smartphone className="w-4 h-4 text-emerald-400" />
-                <span>Descargar App para Android (.APK)</span>
-              </button>
+              {!apkDownloaded && (
+                <button
+                  type="button"
+                  onClick={() => setIsApkModalOpen(true)}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                >
+                  <Smartphone className="w-4 h-4 text-emerald-400" />
+                  <span>Descargar App para Android (.APK)</span>
+                </button>
+              )}
             </div>
           </div>
         ) : isDetoxActive ? (
@@ -1078,6 +1167,7 @@ export function App() {
       <ApkDownloadModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
+        onDownloaded={() => setApkDownloaded(true)}
       />
     </div>
   );

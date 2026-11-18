@@ -76,6 +76,44 @@ export function hashCedulaLegacy(cedulaRaw: string): string {
   return `${prefix}***${suffix}`;
 }
 
+// Preguntas de seguridad predeterminadas para recuperación sin correo
+export const SECURITY_QUESTIONS_1: string[] = [
+  '¿Cuál es el nombre de tu primera mascota?',
+  '¿En qué ciudad o pueblo naciste?',
+  '¿Cuál es tu comida favorita?',
+  '¿Cuál fue tu primer colegio o escuela primaria?',
+  '¿Cuál es tu artista o cantante favoritx?'
+];
+
+export const SECURITY_QUESTIONS_2: string[] = [
+  '¿Cuál es el segundo nombre de tu mamá o papá?',
+  '¿Cuál es el nombre de tu mejor amigx de la infancia?',
+  '¿Cuál fue tu primer trabajo o pasatiempo?',
+  '¿Cuál es tu película o serie favorita?',
+  '¿En qué calle o sector vivías de niñx?'
+];
+
+// Normaliza las respuestas de seguridad (sin tildes, minúsculas, sin espacios extra)
+export function normalizeSecurityAnswer(ans: string): string {
+  return (ans || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // elimina tildes
+    .replace(/[^a-z0-9]/g, '');     // solo alfanumérico
+}
+
+// Hash ligero de respuesta de seguridad para comparación segura
+export function hashSecurityAnswer(answer: string): string {
+  const norm = normalizeSecurityAnswer(answer);
+  let hash = 5381;
+  const str = `burbuja_sec_${norm}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return `ans_${(hash >>> 0).toString(16)}`;
+}
+
 // Hash ligero de contraseña para comparación segura
 export function hashPassword(password: string): string {
   let hash = 5381;
@@ -104,8 +142,12 @@ export interface RegisterParams {
   name: string;
   pronouns: string;
   collective: CollectiveCode;
-  email: string;
+  email?: string;
   password: string;
+  securityQuestion1: string;
+  securityAnswer1: string;
+  securityQuestion2: string;
+  securityAnswer2: string;
   avatar?: string;
 }
 
@@ -124,7 +166,7 @@ export const authService = {
   async register(params: RegisterParams): Promise<UserProfile> {
     const cleanReferral = normalizePin(params.referralPin);
     const cleanCedula = params.cedula.trim().toUpperCase();
-    const cleanEmail = params.email.trim().toLowerCase();
+    const cleanEmail = (params.email || '').trim().toLowerCase() || 'sin-correo';
     const cedulaHashVal = hashCedula(cleanCedula);
     const passwordHashVal = hashPassword(params.password);
 
@@ -198,11 +240,16 @@ export const authService = {
 
     const chosenAvatar = params.avatar || DEFAULT_AVATAR_SILHOUETTE;
 
-    // Guardamos el hash de contraseña y correo tanto en local como embebido en cedula_hash (ej: V12***345::pw_xxx::correo@mail.com)
-    // para que funcione en Supabase inmediatamente sin requerir columnas extra
-    const combinedAuthHash = `${cedulaHashVal}::${passwordHashVal}::${cleanEmail}`;
+    const a1Hash = hashSecurityAnswer(params.securityAnswer1);
+    const a2Hash = hashSecurityAnswer(params.securityAnswer2);
+    const q1Safe = encodeURIComponent(params.securityQuestion1.trim());
+    const q2Safe = encodeURIComponent(params.securityQuestion2.trim());
 
-    const profileData = {
+    // Codificación segura en cedula_hash:
+    // cedulaHashVal::passwordHashVal::cleanEmail::q1Safe::a1Hash::q2Safe::a2Hash
+    const combinedAuthHash = `${cedulaHashVal}::${passwordHashVal}::${cleanEmail}::${q1Safe}::${a1Hash}::${q2Safe}::${a2Hash}`;
+
+    const profileData: Record<string, any> = {
       id: `u-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: params.name.trim(),
       pronouns: params.pronouns || 'Elle / He',
@@ -223,12 +270,27 @@ export const authService = {
       is_enabled: true
     };
 
+    // Intentamos guardar con columnas de seguridad dedicadas
+    const fullProfileData = {
+      ...profileData,
+      security_question_1: params.securityQuestion1.trim(),
+      security_answer_1_hash: a1Hash,
+      security_question_2: params.securityQuestion2.trim(),
+      security_answer_2_hash: a2Hash
+    };
+
     const { error: insertErr } = await supabase
       .from('profiles')
-      .insert([profileData]);
+      .insert([fullProfileData]);
 
     if (insertErr) {
-      console.warn('Aviso al insertar en Supabase (guardando respaldo local):', insertErr.message);
+      // Si la tabla no tiene aún las columnas dedicadas, insertar base (lleva todo en cedula_hash)
+      const { error: fallbackErr } = await supabase
+        .from('profiles')
+        .insert([profileData]);
+      if (fallbackErr) {
+        console.warn('Aviso al insertar en Supabase (guardando respaldo local):', fallbackErr.message);
+      }
     }
 
     try {
@@ -236,7 +298,11 @@ export const authService = {
         ...profileData,
         cedula_only: cedulaHashVal,
         password_hash: passwordHashVal,
-        email: cleanEmail
+        email: cleanEmail,
+        security_question_1: params.securityQuestion1.trim(),
+        security_answer_1_hash: a1Hash,
+        security_question_2: params.securityQuestion2.trim(),
+        security_answer_2_hash: a2Hash
       });
       localStorage.setItem('burbuja_local_profiles', JSON.stringify(localDirectory));
     } catch {}
@@ -343,6 +409,232 @@ export const authService = {
     if (storedPassHash && storedPassHash !== inputPassHash) {
       throw new Error('Contraseña incorrecta.');
     }
+
+    const userProfile: UserProfile = {
+      id: found.id,
+      name: found.name,
+      pronouns: found.pronouns,
+      avatar: found.avatar,
+      pin: found.pin,
+      referredByPin: found.referred_by_pin,
+      referredByName: found.referred_by_name,
+      status: found.status as any,
+      personalMessage: found.personal_message,
+      currentSong: found.current_song,
+      allowWhatsAppBridge: found.allow_whatsapp_bridge,
+      whatsAppNumber: found.whatsapp_number,
+      invitationsRemaining: found.invitations_remaining,
+      reputationScore: found.reputation_score,
+      radarVisible: found.radar_visible,
+      city: found.city
+    };
+
+    try {
+      localStorage.setItem('burbuja_user', JSON.stringify(userProfile));
+    } catch {}
+
+    return userProfile;
+  },
+
+  // OBTENER PREGUNTAS DE SEGURIDAD PARA RECUPERAR CONTRASEÑA
+  async getSecurityQuestions(rawIdentifier: string): Promise<{
+    userId: string;
+    name: string;
+    avatar: string;
+    pin: string;
+    question1: string;
+    question2: string;
+  }> {
+    const cleanPin = normalizePin(rawIdentifier);
+    const cleanCed = rawIdentifier.trim().toUpperCase();
+    const cedHash = hashCedula(cleanCed);
+    const cedHashLeg = hashCedulaLegacy(cleanCed);
+
+    // 1. Buscar en Supabase
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('pin', cleanPin)
+      .maybeSingle();
+
+    if (!profile && cedHash.length >= 5) {
+      const { data: byCed } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHash}%`)
+        .maybeSingle();
+      profile = byCed;
+    }
+
+    if (!profile && cedHashLeg.length >= 5 && cedHashLeg !== cedHash) {
+      const { data: byCedLeg } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHashLeg}%`)
+        .maybeSingle();
+      profile = byCedLeg;
+    }
+
+    // 2. Buscar en almacenamiento local
+    const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
+    const localProfile = localDirectory.find(
+      (p) =>
+        p.pin === cleanPin ||
+        p.cedula_only === cedHash ||
+        p.cedula_only === cedHashLeg ||
+        (p.cedula_hash && (p.cedula_hash.startsWith(cedHash) || p.cedula_hash.startsWith(cedHashLeg)))
+    );
+
+    const found = profile || localProfile;
+    if (!found) {
+      throw new Error(`No se encontró ninguna cuenta registrada con "${rawIdentifier}". Verifica tu PIN o Cédula.`);
+    }
+
+    // Extraer preguntas
+    let q1 = found.security_question_1;
+    let q2 = found.security_question_2;
+
+    if (!q1 || !q2) {
+      const parts = (found.cedula_hash || '').split('::');
+      if (parts.length >= 7) {
+        try {
+          q1 = decodeURIComponent(parts[3]);
+          q2 = decodeURIComponent(parts[5]);
+        } catch {}
+      }
+    }
+
+    if (!q1 || !q2) {
+      throw new Error('Esta cuenta fue creada antes del sistema de preguntas de seguridad. Contacta al Administrador de la Burbuja para restablecer tu contraseña.');
+    }
+
+    return {
+      userId: found.id,
+      name: found.name,
+      avatar: found.avatar || '/logo.svg',
+      pin: found.pin,
+      question1: q1,
+      question2: q2
+    };
+  },
+
+  // RESTABLECER CONTRASEÑA VERIFICANDO LAS RESPUESTAS DE SEGURIDAD
+  async resetPasswordWithSecurityQuestions(params: {
+    rawIdentifier: string;
+    answer1: string;
+    answer2: string;
+    newPassword: string;
+  }): Promise<UserProfile> {
+    const cleanPin = normalizePin(params.rawIdentifier);
+    const cleanCed = params.rawIdentifier.trim().toUpperCase();
+    const cedHash = hashCedula(cleanCed);
+    const cedHashLeg = hashCedulaLegacy(cleanCed);
+
+    if (params.newPassword.trim().length < 4) {
+      throw new Error('La nueva contraseña debe tener al menos 4 caracteres.');
+    }
+
+    // 1. Buscar en Supabase
+    let { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('pin', cleanPin)
+      .maybeSingle();
+
+    if (!profile && cedHash.length >= 5) {
+      const { data: byCed } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHash}%`)
+        .maybeSingle();
+      profile = byCed;
+    }
+
+    if (!profile && cedHashLeg.length >= 5 && cedHashLeg !== cedHash) {
+      const { data: byCedLeg } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('cedula_hash', `${cedHashLeg}%`)
+        .maybeSingle();
+      profile = byCedLeg;
+    }
+
+    // 2. Buscar en almacenamiento local
+    const localDirectory: any[] = JSON.parse(localStorage.getItem('burbuja_local_profiles') || '[]');
+    const localProfile = localDirectory.find(
+      (p) =>
+        p.pin === cleanPin ||
+        p.cedula_only === cedHash ||
+        p.cedula_only === cedHashLeg ||
+        (p.cedula_hash && (p.cedula_hash.startsWith(cedHash) || p.cedula_hash.startsWith(cedHashLeg)))
+    );
+
+    const found = profile || localProfile;
+    if (!found) {
+      throw new Error('No se encontró ninguna cuenta registrada con ese PIN o Cédula.');
+    }
+
+    // Extraer respuestas de seguridad guardadas
+    let storedA1Hash = found.security_answer_1_hash;
+    let storedA2Hash = found.security_answer_2_hash;
+    let q1Safe = encodeURIComponent(found.security_question_1 || '');
+    let q2Safe = encodeURIComponent(found.security_question_2 || '');
+    let cleanEmail = 'sin-correo';
+    const parts = (found.cedula_hash || '').split('::');
+
+    if (parts.length >= 7) {
+      cleanEmail = parts[2] || 'sin-correo';
+      if (!storedA1Hash) {
+        q1Safe = parts[3];
+        storedA1Hash = parts[4];
+        q2Safe = parts[5];
+        storedA2Hash = parts[6];
+      }
+    }
+
+    if (!storedA1Hash || !storedA2Hash) {
+      throw new Error('No se encontraron preguntas de seguridad configuradas para esta cuenta.');
+    }
+
+    // Comparar respuestas de seguridad normalizadas
+    const inputA1Hash = hashSecurityAnswer(params.answer1);
+    const inputA2Hash = hashSecurityAnswer(params.answer2);
+
+    if (inputA1Hash !== storedA1Hash || inputA2Hash !== storedA2Hash) {
+      throw new Error('Una o ambas respuestas de seguridad son incorrectas. Verifica tus respuestas.');
+    }
+
+    // Generar nuevo hash de contraseña
+    const newPassHash = hashPassword(params.newPassword.trim());
+    const baseCedulaPart = parts[0] || hashCedula(found.cedula_hash || found.pin);
+    const newCombinedAuthHash = `${baseCedulaPart}::${newPassHash}::${cleanEmail}::${q1Safe}::${storedA1Hash}::${q2Safe}::${storedA2Hash}`;
+
+    // Actualizar en Supabase
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          cedula_hash: newCombinedAuthHash
+        })
+        .eq('id', found.id);
+    } catch (e) {
+      console.warn('Error al actualizar contraseña en Supabase:', e);
+    }
+
+    // Actualizar en localStorage
+    try {
+      const updatedDir = localDirectory.map((p) => {
+        if (p.id === found.id || p.pin === found.pin) {
+          return {
+            ...p,
+            password_hash: newPassHash,
+            cedula_hash: newCombinedAuthHash
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('burbuja_local_profiles', JSON.stringify(updatedDir));
+    } catch {}
 
     const userProfile: UserProfile = {
       id: found.id,

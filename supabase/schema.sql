@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   radar_visible BOOLEAN DEFAULT false,
   city TEXT DEFAULT 'Barquisimeto',
   is_enabled BOOLEAN DEFAULT true,
+  security_question_1 TEXT,
+  security_answer_1_hash TEXT,
+  security_question_2 TEXT,
+  security_answer_2_hash TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

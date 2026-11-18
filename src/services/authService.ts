@@ -3,6 +3,7 @@ import type { UserProfile } from '../types';
 
 export const SUPERADMIN_PIN = 'BL-94X7A';
 export const SUPERADMIN_DEFAULT_PASS = 'Admin2026*';
+export const DEFAULT_AVATAR_SILHOUETTE = '/default-avatar.svg';
 
 export type CollectiveCode = 'L' | 'G' | 'B' | 'T' | 'I' | 'Q' | 'A' | 'X';
 
@@ -190,14 +191,7 @@ export const authService = {
       attempts++;
     }
 
-    const defaultAvatars = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80'
-    ];
-    const chosenAvatar = params.avatar || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+    const chosenAvatar = params.avatar || DEFAULT_AVATAR_SILHOUETTE;
 
     // Guardamos el hash de contraseña y correo tanto en local como embebido en cedula_hash (ej: V12***345::pw_xxx::correo@mail.com)
     // para que funcione en Supabase inmediatamente sin requerir columnas extra

@@ -268,21 +268,30 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
         {/* Fila Principal: Foto a la izquierda / Info estructurada a la derecha */}
         <div className="flex items-start gap-4">
-          {/* Foto de perfil con indicador de estado */}
-          <div className="relative shrink-0">
+          {/* Foto de perfil con indicador de estado (Clickable para editar/subir foto) */}
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            title="Toca para cambiar o subir tu foto de perfil"
+            className="relative shrink-0 group focus:outline-none text-left"
+          >
             <img
               src={currentUser.avatar}
               alt={currentUser.name}
-              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 shadow-lg transition-transform hover:scale-105 ${
+              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 shadow-lg transition-all group-hover:scale-105 group-hover:ring-2 group-hover:ring-pink-500 ${
                 theme === 'light' ? 'border-slate-200' : 'border-slate-700'
               }`}
             />
+            {/* Overlay sutil para indicar que se puede tocar/cambiar */}
+            <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+              <span>Cambiar</span>
+            </div>
             <div className={`absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full border-2 ${
               theme === 'light' ? 'border-white' : 'border-slate-900'
             } ${STATUS_CONFIG[currentUser.status].dotColor} flex items-center justify-center text-xs shadow-md`}>
               {currentUser.status === 'en_crisis' ? '💜' : ''}
             </div>
-          </div>
+          </button>
 
           {/* COLUMNA: NOMBRE (PRONOMBRES) -> MENSAJE / MÚSICA -> ESTATUS */}
           <div className="flex-1 min-w-0 space-y-1">

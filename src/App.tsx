@@ -1012,11 +1012,15 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setIsApkModalOpen(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs transition-all active:scale-95 shadow-sm"
-                title="Descargar App Android (.APK)"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs transition-all active:scale-95 shadow-sm"
+                title="Descargar Burbuja LGBTIQ+ v1.0.0"
               >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>APK</span>
+                <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="hidden sm:inline">Descargar Burbuja LGBTIQ+ v1.0.0</span>
+                <span className="sm:hidden">v1.0.0</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase tracking-wider animate-pulse">
+                  Nueva
+                </span>
               </button>
               <button
                 type="button"
@@ -1084,10 +1088,15 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setIsApkModalOpen(true)}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+                className="w-full py-3 px-4 rounded-2xl bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 text-white text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-lg group"
               >
-                <Smartphone className="w-4 h-4 text-emerald-400" />
-                <span>Descargar App para Android (.APK)</span>
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-400" />
+                  <span>Descargar Burbuja LGBTIQ+ v1.0.0</span>
+                </div>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black uppercase tracking-wider animate-pulse">
+                  Nueva actualización
+                </span>
               </button>
             </div>
           </div>

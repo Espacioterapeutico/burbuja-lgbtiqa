@@ -84,13 +84,13 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({
         </div>
 
         <div className="space-y-1 mb-4">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-            <Sparkles className="w-3 h-3" />
-            <span>Versión Oficial Android • v1.0</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[10px] font-black uppercase tracking-wider animate-pulse">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+            <span>¡Nueva actualización disponible!</span>
           </span>
-          <h3 className="text-lg font-black text-white">Burbuja LGBTIQA+ (.APK)</h3>
+          <h3 className="text-xl font-black text-white">Burbuja LGBTIQ+ v1.0.0</h3>
           <p className="text-xs text-slate-400">
-            Instalador directo para tu teléfono, seguro y libre de tiendas.
+            Instalador oficial directo para tu teléfono Android (.APK).
           </p>
         </div>
 
@@ -116,7 +116,7 @@ export const ApkDownloadModal: React.FC<ApkDownloadModalProps> = ({
           className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-xs shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-2 transition-transform active:scale-95"
         >
           <Download className="w-4 h-4" />
-          <span>Descargar Archivo APK (Android)</span>
+          <span>Descargar Burbuja LGBTIQ+ v1.0.0</span>
         </button>
 
         {downloadStarted && (

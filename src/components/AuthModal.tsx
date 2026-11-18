@@ -12,7 +12,6 @@ import {
   Loader2,
   ArrowRight,
   Smartphone,
-  Download,
   Lock,
   Mail,
   Eye,
@@ -502,24 +501,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsApkModalOpen(true)}
-                className="w-full py-2.5 px-3 rounded-2xl bg-slate-950/90 hover:bg-slate-800/90 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white transition-all flex items-center justify-between group active:scale-95 shadow-sm"
+                className="w-full py-2.5 px-3 rounded-2xl bg-slate-950/90 hover:bg-slate-800/90 border border-emerald-500/40 text-slate-300 hover:text-white transition-all flex items-center justify-between group active:scale-95 shadow-sm"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
                     <Smartphone className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <span className="text-[11px] font-bold text-slate-200 block group-hover:text-emerald-300 transition-colors">
-                      Descargar App Android
+                    <span className="text-[11px] font-extrabold text-slate-200 block group-hover:text-emerald-300 transition-colors">
+                      Descargar Burbuja LGBTIQ+ v1.0.0
                     </span>
                     <span className="text-[9px] text-slate-500 block">
-                      Instalador directo .APK • v1.0.2
+                      Instalador oficial directo para Android (.APK)
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-1 rounded-lg">
-                  <Download className="w-3 h-3" />
-                  <span>APK</span>
+                <div className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-300 bg-emerald-950/80 border border-emerald-700/60 px-2 py-0.5 rounded-lg animate-pulse">
+                  <span>Nueva actualización</span>
                 </div>
               </button>
             </div>

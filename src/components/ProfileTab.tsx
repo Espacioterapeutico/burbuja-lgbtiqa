@@ -438,14 +438,24 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         <button
           type="button"
           onClick={() => setIsApkModalOpen(true)}
-          className="w-full py-2.5 px-3 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-sm"
+          className="w-full py-3 px-3.5 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-sm group"
         >
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-emerald-400" />
-            <span>Descargar App Oficial para Android (.APK)</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <span className="font-extrabold text-emerald-200 block text-xs">
+                Descargar Burbuja LGBTIQ+ v1.0.0
+              </span>
+              <span className="text-[10px] text-emerald-400/80 block">
+                Instalador oficial para Android (.APK)
+              </span>
+            </div>
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 font-bold">
-            v1.0.2
+          <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 font-black uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse">
+            <Share2 className="w-3 h-3" />
+            <span>Nueva actualización</span>
           </span>
         </button>
 

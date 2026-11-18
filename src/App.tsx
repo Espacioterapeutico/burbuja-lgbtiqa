@@ -945,7 +945,7 @@ export function App() {
       isDetoxActive ? 'filter grayscale contrast-105' : ''
     }`}>
       {/* Contenedor de Vistas Principales */}
-      <main className="flex-1 max-w-lg w-full mx-auto px-4 pt-4">
+      <main className="flex-1 max-w-lg w-full mx-auto px-3.5 sm:px-4 pt-9 sm:pt-4 pb-6">
         {!isLoggedIn ? (
           <div className="py-12 px-4 text-center space-y-6">
             <div className="flex justify-center">

@@ -134,38 +134,39 @@ export const SuperadminPortal: React.FC<SuperadminPortalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-2xl flex flex-col overflow-y-auto animate-in fade-in duration-200 text-left">
-      {/* 1. Header Superior del Superadmin */}
-      <header className="border-b border-slate-800 bg-slate-900/90 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-purple-950/80 border border-purple-700/60 text-purple-300 shadow-md">
-            <ShieldCheck className="w-5 h-5 text-purple-400" />
+    <div className="fixed inset-0 z-50 w-full bg-slate-950 flex flex-col overflow-y-auto overflow-x-hidden animate-in fade-in duration-200 text-left">
+      {/* 1. Bloque Superior Fijo (Header + Pestañas, respetando barra de estado del teléfono) */}
+      <div className="sticky top-0 z-30 bg-slate-900 border-b border-slate-800 shadow-md">
+        <header className="border-b border-slate-800/80 px-4 sm:px-6 pt-10 pb-3 sm:py-3.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-2xl bg-purple-950/80 border border-purple-700/60 text-purple-300 shadow-md shrink-0">
+              <ShieldCheck className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-1.5 flex-wrap">
+                <span className="truncate">Portal de Superadmin</span>
+                <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-700/50 shrink-0">
+                  Solo Monitoreo
+                </span>
+              </h2>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Panel de monitoreo silencioso y auditoría. Cuenta invisible sin chat, sin contactos públicos ni exposición a usuarios.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-              <span>Portal de Superadmin</span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-700/50">
-                Solo Monitoreo
-              </span>
-            </h2>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              Panel de monitoreo silencioso y auditoría. Cuenta invisible sin chat, sin contactos públicos ni exposición a usuarios.
-            </p>
-          </div>
-        </div>
 
-        <button
-          onClick={onClose}
-          className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-sm active:scale-95 flex items-center gap-1.5"
-        >
-          <span>Volver a la App</span>
-          <X className="w-3.5 h-3.5 text-slate-400" />
-        </button>
-      </header>
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-colors shadow-sm active:scale-95 flex items-center gap-1 shrink-0"
+          >
+            <span>Cerrar</span>
+            <X className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+        </header>
 
-      {/* 2. Pestañas de Navegación del Superadmin */}
-      <div className="border-b border-slate-800 bg-slate-900/50 px-4 sm:px-6 sticky top-[57px] z-20 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto py-2">
+        {/* 2. Pestañas de Navegación del Superadmin */}
+        <div className="bg-slate-900/95 px-3 sm:px-6">
+          <div className="max-w-6xl mx-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-2 no-scrollbar">
           <button
             onClick={() => setActiveTab('usuarios')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
@@ -213,6 +214,7 @@ export const SuperadminPortal: React.FC<SuperadminPortalProps> = ({
             <Megaphone className="w-4 h-4" />
             <span>Avisos Globales ({broadcasts.length})</span>
           </button>
+        </div>
         </div>
       </div>
 

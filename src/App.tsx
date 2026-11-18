@@ -26,7 +26,7 @@ import { playMsnOnlineChime } from './utils/sound';
 import { authService } from './services/authService';
 import { supabase } from './lib/supabase';
 import { Logo } from './components/Logo';
-import { ApkDownloadModal, isApkAlreadyDownloadedOrInstalled } from './components/ApkDownloadModal';
+import { ApkDownloadModal } from './components/ApkDownloadModal';
 import { Smartphone, Radio, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -163,7 +163,6 @@ export function App() {
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => useMockData ? managedUsersMock : []);
   const [globalBroadcasts, setGlobalBroadcasts] = useState<GlobalBroadcast[]>(() => useMockData ? globalBroadcastsMock : []);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
-  const [apkDownloaded, setApkDownloaded] = useState<boolean>(() => isApkAlreadyDownloadedOrInstalled());
 
   // My stories state
   const [myStories, setMyStories] = useState<{
@@ -1012,6 +1011,15 @@ export function App() {
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
+                onClick={() => setIsApkModalOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs transition-all active:scale-95 shadow-sm"
+                title="Descargar App Android (.APK)"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>APK</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsRadarOpen(true)}
                 className="p-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-pink-500 transition-all active:scale-95 shadow-sm"
                 title="Radar de Cercanía"
@@ -1073,16 +1081,14 @@ export function App() {
                 Iniciar Sesión / Crear Cuenta
               </button>
 
-              {!apkDownloaded && (
-                <button
-                  type="button"
-                  onClick={() => setIsApkModalOpen(true)}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-                >
-                  <Smartphone className="w-4 h-4 text-emerald-400" />
-                  <span>Descargar App para Android (.APK)</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsApkModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Descargar App para Android (.APK)</span>
+              </button>
             </div>
           </div>
         ) : isDetoxActive ? (
@@ -1270,7 +1276,6 @@ export function App() {
       <ApkDownloadModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
-        onDownloaded={() => setApkDownloaded(true)}
       />
     </div>
   );

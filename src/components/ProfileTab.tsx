@@ -17,7 +17,7 @@ import {
 import type { UserProfile, UserStatus } from '../types';
 import { parseMusicLink } from '../utils/musicParser';
 import { SUPERADMIN_PIN } from '../services/authService';
-import { isApkAlreadyDownloadedOrInstalled, ApkDownloadModal } from './ApkDownloadModal';
+import { ApkDownloadModal } from './ApkDownloadModal';
 import confetti from 'canvas-confetti';
 
 interface ProfileTabProps {
@@ -90,7 +90,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   const [isEditingMsg, setIsEditingMsg] = useState(false);
   const [draftMsg, setDraftMsg] = useState(currentUser.personalMessage);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
-  const [apkDownloaded, setApkDownloaded] = useState(() => isApkAlreadyDownloadedOrInstalled());
 
   const isSuperadmin = currentUser.id === 'superadmin-root' || currentUser.pin === SUPERADMIN_PIN;
   const parsedMusic = parseMusicLink(currentUser.currentSong);
@@ -435,22 +434,20 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </button>
         )}
 
-        {/* Descargar APK Android (Si no la tiene descargada o no está dentro de la APK) */}
-        {!apkDownloaded && (
-          <button
-            type="button"
-            onClick={() => setIsApkModalOpen(true)}
-            className="w-full py-2.5 px-3 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-sm"
-          >
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-emerald-400" />
-              <span>Descargar App Oficial para Android (.APK)</span>
-            </div>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 font-bold">
-              v1.0.2
-            </span>
-          </button>
-        )}
+        {/* Descargar APK Android (Siempre visible para actualizar o instalar) */}
+        <button
+          type="button"
+          onClick={() => setIsApkModalOpen(true)}
+          className="w-full py-2.5 px-3 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between transition-all active:scale-95 shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span>Descargar App Oficial para Android (.APK)</span>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 font-bold">
+            v1.0.2
+          </span>
+        </button>
 
         {/* Puente Seguro de WhatsApp */}
         {onToggleWhatsAppBridge && (
@@ -500,7 +497,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
       <ApkDownloadModal
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
-        onDownloaded={() => setApkDownloaded(true)}
       />
     </div>
   );

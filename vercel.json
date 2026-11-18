@@ -14,6 +14,18 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/apk",
+      "destination": "/downloads/burbuja-lgbtiqa.apk",
+      "permanent": false
+    },
+    {
+      "source": "/descargar",
+      "destination": "/downloads/burbuja-lgbtiqa.apk",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!downloads/).*)",

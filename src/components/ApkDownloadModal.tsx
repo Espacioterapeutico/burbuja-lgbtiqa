@@ -14,12 +14,9 @@ import confetti from 'canvas-confetti';
 
 export function isApkAlreadyDownloadedOrInstalled(): boolean {
   try {
-    if (localStorage.getItem('burbuja_apk_downloaded') === 'true') return true;
     const ua = navigator.userAgent || '';
-    if (ua.includes('; wv)') || ua.includes('Version/4.0 Chrome/') || ua.includes('BurbujaAndroid')) {
-      return true;
-    }
-    if (window.matchMedia?.('(display-mode: standalone)').matches) {
+    // Solo se oculta si el usuario YA está navegando DENTRO de la aplicación instalada
+    if (ua.includes('BurbujaAndroid')) {
       return true;
     }
   } catch {}

@@ -60,6 +60,7 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
               personalMessage: p.personal_message || '',
               currentSong: p.current_song || '',
               allowWhatsAppBridge: !!p.allow_whatsapp_bridge,
+              stories: [],
               distanceKm: 1.5,
               city: p.city || 'Barquisimeto'
             }))

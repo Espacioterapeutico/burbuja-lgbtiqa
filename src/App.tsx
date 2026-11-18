@@ -181,6 +181,9 @@ export function App() {
             joinedDate: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Reciente',
             isEnabled: p.is_enabled !== false,
             city: p.city || 'Barquisimeto',
+            status: (p.status || 'disponible') as any,
+            reputationScore: p.reputation_score ?? 100,
+            personalMessage: p.personal_message || '',
             reportsReceivedCount: 0,
             communitiesCreated: []
           }))

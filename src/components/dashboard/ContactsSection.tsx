@@ -11,7 +11,8 @@ import {
   Plus,
   Globe,
   Check,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import type { Contact, BubbleConnectionRequest } from '../../types';
 import { StatusBadge, getStatusConfig } from '../StatusBadge';
@@ -29,6 +30,7 @@ interface ContactsSectionProps {
   bubbleRequests?: BubbleConnectionRequest[];
   onAcceptBubbleRequest?: (req: BubbleConnectionRequest) => void;
   onRejectBubbleRequest?: (reqId: string) => void;
+  onRemoveContact?: (contact: Contact) => void;
 }
 
 const BLOCK_REASONS = [
@@ -49,11 +51,13 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
   onOpenRadar,
   bubbleRequests = [],
   onAcceptBubbleRequest,
-  onRejectBubbleRequest
+  onRejectBubbleRequest,
+  onRemoveContact
 }) => {
   const [showRequestsTray, setShowRequestsTray] = useState(true);
   const [inspectedRequest, setInspectedRequest] = useState<BubbleConnectionRequest | null>(null);
   const [blockingTarget, setBlockingTarget] = useState<Contact | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [selectedBlockReason, setSelectedBlockReason] = useState(BLOCK_REASONS[0]);
   const [customBlockReason, setCustomBlockReason] = useState('');
 
@@ -319,6 +323,16 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                   </a>
                 )}
 
+                {/* Botón de Eliminar Contacto */}
+                <button
+                  type="button"
+                  onClick={() => setContactToDelete(contact)}
+                  className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 transition-colors"
+                  title="Eliminar de mis contactos"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
                 {/* Botón de Bloqueo Transparente */}
                 <button
                   onClick={() => setBlockingTarget(contact)}
@@ -506,6 +520,47 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
               >
                 <X className="w-4 h-4" />
                 <span>Pasar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Eliminar Contacto */}
+      {contactToDelete && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-rose-600/70 p-5 shadow-2xl space-y-4 text-left animate-in zoom-in-95">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-rose-950 border border-rose-700 text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Eliminar Contacto</h3>
+                <p className="text-[11px] text-slate-400">Quitar de tu lista de contactos</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              ¿Deseas eliminar a <strong className="text-white">{contactToDelete.name}</strong> ({contactToDelete.pin}) de tu lista de contactos? Podrás volver a conectar usando su PIN en el futuro.
+            </p>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setContactToDelete(null)}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onRemoveContact?.(contactToDelete);
+                  setContactToDelete(null);
+                }}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-lg transition-transform active:scale-95"
+              >
+                Sí, Eliminar
               </button>
             </div>
           </div>

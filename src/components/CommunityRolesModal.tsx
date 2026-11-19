@@ -15,7 +15,8 @@ import {
   Check, 
   AlertTriangle,
   Users,
-  Search
+  Search,
+  LogOut
 } from 'lucide-react';
 import type { 
   Community, 
@@ -39,6 +40,7 @@ interface CommunityRolesModalProps {
   onRejectRequest: (communityId: string, requestId: string) => void;
   onAddMemberByPin: (communityId: string, pin: string) => boolean;
   onOpenReportMember: (member: CommunityMember) => void;
+  onLeaveCommunity?: (communityId: string) => void;
 }
 
 const PRESET_ICONS = ['🌆', '🎬', '🏳️‍⚧️', '📖', '🎨', '☕', '🌿', '🪩', '💜', '📢', '🤝', '🏕️', '⚽', '💻', '✨'];
@@ -56,7 +58,8 @@ export const CommunityRolesModal: React.FC<CommunityRolesModalProps> = ({
   onAcceptRequest,
   onRejectRequest,
   onAddMemberByPin,
-  onOpenReportMember
+  onOpenReportMember,
+  onLeaveCommunity
 }) => {
   // Determine current user's role in this community
   const myMemberRecord = community.members?.find(m => m.userId === currentUser.id);
@@ -70,6 +73,7 @@ export const CommunityRolesModal: React.FC<CommunityRolesModalProps> = ({
   const [memberSearch, setMemberSearch] = useState('');
   const [addPinInput, setAddPinInput] = useState('');
   const [addPinFeedback, setAddPinFeedback] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // Group settings draft (Admin only)
   const [editName, setEditName] = useState(community.name);
@@ -828,6 +832,55 @@ export const CommunityRolesModal: React.FC<CommunityRolesModalProps> = ({
           </div>
         )}
 
+        {/* Botón Abandonar Comunidad */}
+        <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+          <p className="text-[11px] text-slate-500">
+            ¿Ya no deseas pertenecer a este grupo?
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowLeaveConfirm(true)}
+            className="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 text-rose-300 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Abandonar Comunidad</span>
+          </button>
+        </div>
+
+        {/* Modal de Confirmación para Abandonar Comunidad */}
+        {showLeaveConfirm && (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-rose-600/70 p-5 shadow-2xl space-y-3 text-left animate-in zoom-in-95">
+              <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+                <span>¿Abandonar «{community.name}»?</span>
+              </h4>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Dejarás de recibir publicaciones y mensajes grupales de esta comunidad. Podrás volver a unirte cuando lo desees desde el explorador.
+              </p>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="flex-1 py-2 bg-slate-800 text-slate-300 text-xs font-bold rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLeaveCommunity?.(community.id);
+                    setShowLeaveConfirm(false);
+                    onClose();
+                  }}
+                  className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow transition-transform active:scale-95"
+                >
+                  Sí, Salir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

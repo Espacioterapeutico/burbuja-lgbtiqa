@@ -90,6 +90,7 @@ interface GlobalModalsProps {
   onGrantInvitations?: (userId: string, count: number) => void;
   onToggleCommunityFreeze?: (commId: string) => void;
   onSendBroadcast?: (broadcast: GlobalBroadcast) => void;
+  onLeaveCommunity?: (communityId: string) => void;
 }
 
 export const GlobalModals: React.FC<GlobalModalsProps> = ({
@@ -154,7 +155,8 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
   onToggleUserEnabled,
   onGrantInvitations,
   onToggleCommunityFreeze,
-  onSendBroadcast
+  onSendBroadcast,
+  onLeaveCommunity
 }) => {
   return (
     <>
@@ -262,6 +264,7 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
           onRejectRequest={onRejectRequest}
           onAddMemberByPin={onAddMemberByPin}
           onOpenReportMember={onOpenReportMember}
+          onLeaveCommunity={onLeaveCommunity}
         />
       )}
       {/* Radar de Burbujas Modal (Exploración Geográfica & Cercanía) */}

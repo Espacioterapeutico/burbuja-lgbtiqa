@@ -10,9 +10,9 @@ export const DetoxStandbyView: React.FC<DetoxStandbyViewProps> = ({ onReconnect 
   const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="relative min-h-[85vh] flex flex-col items-center justify-between p-6 text-center select-none">
+    <div className="fixed inset-0 z-50 w-screen h-screen min-h-dvh bg-black flex flex-col items-center justify-between p-6 text-center select-none overflow-y-auto">
       {/* Retro Standby Ambient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-black pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-black to-black pointer-events-none" />
 
       {/* Top Header */}
       <div className="relative z-10 w-full flex items-center justify-between pt-2 border-b border-neutral-800 pb-4">

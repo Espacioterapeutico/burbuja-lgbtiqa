@@ -23,7 +23,7 @@ import { CommunitiesTab } from './components/CommunitiesTab';
 import { ContactsTab } from './components/ContactsTab';
 import { ProfileTab } from './components/ProfileTab';
 import { playMsnOnlineChime } from './utils/sound';
-import { authService } from './services/authService';
+import { authService, SUPERADMIN_PIN } from './services/authService';
 import { supabase } from './lib/supabase';
 import { Logo } from './components/Logo';
 import { ApkDownloadModal } from './components/ApkDownloadModal';
@@ -314,17 +314,27 @@ export function App() {
 
     // 2. Cargar solicitudes pendientes de conectar burbujas dirigidas a este usuario
     const loadRequests = async () => {
-      const localKey = `burbuja_requests_${currentUser.pin.toUpperCase()}`;
+      const cleanPin = currentUser.pin.toUpperCase().trim();
+      const unhyphenated = cleanPin.replace(/[^A-Z0-9]/g, '');
+      const localKey = `burbuja_requests_${cleanPin}`;
+      const altLocalKey = `burbuja_requests_${unhyphenated}`;
       let localReqs: BubbleConnectionRequest[] = [];
       try {
-        localReqs = JSON.parse(localStorage.getItem(localKey) || '[]');
+        const k1 = JSON.parse(localStorage.getItem(localKey) || '[]');
+        const k2 = JSON.parse(localStorage.getItem(altLocalKey) || '[]');
+        localReqs = [...k1];
+        k2.forEach((r: any) => {
+          if (!localReqs.some(x => x.id === r.id || x.fromUserPin === r.fromUserPin)) {
+            localReqs.push(r);
+          }
+        });
       } catch {}
 
       try {
         const { data, error } = await supabase
           .from('connection_requests')
           .select('*')
-          .eq('to_user_pin', currentUser.pin.toUpperCase())
+          .or(`to_user_pin.ilike.${cleanPin},to_user_pin.ilike.${unhyphenated}`)
           .eq('status', 'pendiente')
           .order('created_at', { ascending: false });
 
@@ -369,12 +379,16 @@ export function App() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'connection_requests',
-          filter: `to_user_pin=eq.${currentUser.pin.toUpperCase()}`
+          table: 'connection_requests'
         },
         (payload: any) => {
           const d = payload.new;
-          if (d && d.status === 'pendiente') {
+          const cleanMyPin = currentUser.pin.toUpperCase().trim();
+          const unhyphenMyPin = cleanMyPin.replace(/[^A-Z0-9]/g, '');
+          const destPin = (d?.to_user_pin || '').toUpperCase().trim();
+          const destUnhyphen = destPin.replace(/[^A-Z0-9]/g, '');
+
+          if (d && d.status === 'pendiente' && (destPin === cleanMyPin || destUnhyphen === unhyphenMyPin)) {
             const incoming: BubbleConnectionRequest = {
               id: d.id,
               fromUserId: d.from_user_id,
@@ -1011,13 +1025,17 @@ export function App() {
   const handleSendConnectionRequest = (target: Contact, introMessage: string) => {
     setSentRadarPins(prev => [...prev, target.pin]);
 
+    const isAdminSending = authService.isSuperadmin(currentUser) || currentUser.pin === SUPERADMIN_PIN;
+    const cleanTargetPin = target.pin.toUpperCase().trim();
+    const unhyphenTargetPin = cleanTargetPin.replace(/[^A-Z0-9]/g, '');
+
     const newReq: BubbleConnectionRequest = {
       id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       fromUserId: currentUser.id,
-      fromUserName: currentUser.name,
-      fromUserAvatar: currentUser.avatar || '/logo.svg',
-      fromUserPronouns: currentUser.pronouns || 'Comunidad',
-      fromUserPin: currentUser.pin,
+      fromUserName: isAdminSending ? 'Burbuja LGBTIQ' : currentUser.name,
+      fromUserAvatar: isAdminSending ? '/logo.svg' : (currentUser.avatar || '/logo.svg'),
+      fromUserPronouns: isAdminSending ? 'Oficial' : (currentUser.pronouns || 'Comunidad'),
+      fromUserPin: isAdminSending ? SUPERADMIN_PIN : currentUser.pin,
       introMessage: introMessage?.trim() || '¡Hola! Me gustaría conectar nuestras burbujas en Burbuja LGBTIQA+ 🫧',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       distanceKm: target.distanceKm || 0.5,
@@ -1035,7 +1053,7 @@ export function App() {
         from_user_avatar: newReq.fromUserAvatar,
         from_user_pronouns: newReq.fromUserPronouns,
         from_user_pin: newReq.fromUserPin,
-        to_user_pin: target.pin.toUpperCase(),
+        to_user_pin: cleanTargetPin,
         intro_message: newReq.introMessage,
         distance_km: newReq.distanceKm,
         city: newReq.city,
@@ -1046,14 +1064,21 @@ export function App() {
         if (error) console.warn('Supabase insert connection request error:', error);
       });
 
-    // 2. Persistir en localStorage para el usuario destinatario (sincronización local instantánea)
+    // 2. Persistir en localStorage bajo múltiples claves para garantizar recepción inmediata
     try {
-      const storageKey = `burbuja_requests_${target.pin.toUpperCase()}`;
-      const existing: BubbleConnectionRequest[] = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      if (!existing.some(r => r.fromUserPin === newReq.fromUserPin)) {
-        existing.unshift(newReq);
-        localStorage.setItem(storageKey, JSON.stringify(existing));
-      }
+      const keys = [
+        `burbuja_requests_${cleanTargetPin}`,
+        `burbuja_requests_${unhyphenTargetPin}`
+      ];
+      if (target.id) keys.push(`burbuja_requests_${target.id}`);
+
+      keys.forEach(k => {
+        const existing: BubbleConnectionRequest[] = JSON.parse(localStorage.getItem(k) || '[]');
+        if (!existing.some(r => r.fromUserPin === newReq.fromUserPin)) {
+          existing.unshift(newReq);
+          localStorage.setItem(k, JSON.stringify(existing));
+        }
+      });
     } catch (e) {
       console.warn('Error al guardar solicitud localmente:', e);
     }
@@ -1165,6 +1190,60 @@ export function App() {
       id: `toast-reject-bubble-${Date.now()}`,
       title: 'Solicitud descartada',
       message: 'La invitación para conectar burbujas ha sido retirada.',
+      avatar: currentUser.avatar
+    });
+  };
+
+  const handleRemoveContact = (contact: Contact) => {
+    setContacts(prev => {
+      const updated = prev.filter(c => c.pin !== contact.pin && c.id !== contact.id);
+      if (currentUser?.pin) {
+        try {
+          localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
+    triggerMsnToast({
+      id: `toast-rem-contact-${Date.now()}`,
+      title: 'Contacto Eliminado',
+      message: `Has eliminado a ${contact.name} de tus contactos.`,
+      avatar: contact.avatar
+    });
+  };
+
+  const handleLeaveCommunity = (communityId: string) => {
+    const comm = communities.find(c => c.id === communityId);
+    setCommunities(prev =>
+      prev.map(c => {
+        if (c.id === communityId) {
+          return {
+            ...c,
+            isJoined: false,
+            memberCount: Math.max(0, c.memberCount - 1),
+            members: c.members?.filter(m => m.userId !== currentUser.id)
+          };
+        }
+        return c;
+      })
+    );
+
+    if (selectedCommunity?.id === communityId) {
+      setSelectedCommunity(emptyCommunityFallback);
+    }
+
+    supabase
+      .from('community_members')
+      .delete()
+      .eq('community_id', communityId)
+      .eq('user_id', currentUser.id)
+      .then(() => {});
+
+    triggerMsnToast({
+      id: `toast-leave-comm-${Date.now()}`,
+      title: 'Comunidad Abandonada',
+      message: `Has salido de "${comm?.name || 'la comunidad'}".`,
       avatar: currentUser.avatar
     });
   };
@@ -1419,6 +1498,7 @@ export function App() {
                 bubbleRequests={bubbleRequests}
                 onAcceptBubbleRequest={handleAcceptBubbleRequest}
                 onRejectBubbleRequest={handleRejectBubbleRequest}
+                onRemoveContact={handleRemoveContact}
                 onOpenAddContact={() => setIsAddContactOpen(true)}
                 onOpenRadar={() => setIsRadarOpen(true)}
                 onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
@@ -1557,6 +1637,7 @@ export function App() {
         onToggleWhatsAppBridge={handleToggleWhatsAppBridge}
         onUpdateStatus={handleUpdateStatus}
         onUpdateProfile={handleUpdateProfile}
+        onLeaveCommunity={handleLeaveCommunity}
       />
 
       {/* Modal de Explorar Comunidades */}

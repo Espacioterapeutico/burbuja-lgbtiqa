@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, X, UserPlus, Radio } from 'lucide-react';
+import { Search, X, UserPlus, Radio, Check } from 'lucide-react';
 import type { Contact, UserProfile, BubbleConnectionRequest } from '../types';
 import { StoriesFeedBar } from './dashboard/StoriesFeedBar';
 import { ContactsSection } from './dashboard/ContactsSection';
@@ -18,6 +18,7 @@ interface ContactsTabProps {
   bubbleRequests: BubbleConnectionRequest[];
   onAcceptBubbleRequest: (req: BubbleConnectionRequest) => void;
   onRejectBubbleRequest: (reqId: string) => void;
+  onRemoveContact?: (contact: Contact) => void;
   onOpenAddContact: () => void;
   onOpenRadar: () => void;
   onOpenDirectChat: (contact: Contact) => void;
@@ -39,6 +40,7 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
   bubbleRequests,
   onAcceptBubbleRequest,
   onRejectBubbleRequest,
+  onRemoveContact,
   onOpenAddContact,
   onOpenRadar,
   onOpenDirectChat,
@@ -100,6 +102,78 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
           </div>
         </div>
 
+        {/* BANNER DESTACADO DE SOLICITUDES ENTRANTES */}
+        {bubbleRequests && bubbleRequests.length > 0 && (
+          <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-pink-950/80 via-purple-950/80 to-slate-900 border-2 border-pink-500 shadow-xl space-y-3 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center text-sm font-bold border border-pink-500/40 animate-bounce">
+                  🫧
+                </span>
+                <div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <span>¡Tienes {bubbleRequests.length} Solicitud{bubbleRequests.length > 1 ? 'es' : ''} de Conexión!</span>
+                  </h3>
+                  <p className="text-[10px] text-pink-300/80">
+                    Personas que quieren conectar sus burbujas contigo
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black font-mono bg-pink-600 text-white px-2.5 py-0.5 rounded-full shadow-sm">
+                {bubbleRequests.length} nueva{bubbleRequests.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {bubbleRequests.map(req => (
+                <div key={req.id} className="p-2.5 rounded-2xl bg-slate-950/90 border border-pink-500/40 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="relative shrink-0">
+                      <img 
+                        src={req.fromUserAvatar} 
+                        alt={req.fromUserName} 
+                        className="w-10 h-10 rounded-full object-cover border-2 border-pink-500" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg'; }} 
+                      />
+                      <span className="absolute -bottom-1 -right-1 text-[10px]">🫧</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-white truncate">{req.fromUserName}</span>
+                        <span className="text-[10px] text-pink-400 font-medium">({req.fromUserPronouns})</span>
+                      </div>
+                      {req.introMessage && (
+                        <p className="text-[11px] text-slate-300 italic truncate">"{req.introMessage}"</p>
+                      )}
+                      <span className="font-mono text-[9px] text-slate-500">{req.fromUserPin}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onAcceptBubbleRequest(req)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md transition-all active:scale-95 cursor-pointer"
+                      title="Aceptar y conectar"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Aceptar 🫧</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRejectBubbleRequest(req.id)}
+                      className="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-700 transition-all active:scale-95 cursor-pointer"
+                      title="Rechazar solicitud"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 2. Barra de Historias (Estilo Estados de WhatsApp / Instagram) */}
         <StoriesFeedBar
           currentUser={currentUser}
@@ -151,6 +225,7 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
         bubbleRequests={bubbleRequests}
         onAcceptBubbleRequest={onAcceptBubbleRequest}
         onRejectBubbleRequest={onRejectBubbleRequest}
+        onRemoveContact={onRemoveContact}
       />
     </div>
   );

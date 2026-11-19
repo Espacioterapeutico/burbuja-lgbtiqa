@@ -45,7 +45,7 @@ const STANDARD_STATUSES: { key: StandardUserStatus; label: string; dotColor: str
   { key: 'ocupado', label: 'Ocupadx', dotColor: 'bg-rose-500', icon: '🔴' },
   { key: 'en_fiesta', label: 'De Fiesta', dotColor: 'bg-cyan-500', icon: '🪩' },
   { key: 'en_crisis', label: 'En Crisis', dotColor: 'bg-purple-500 animate-ping', icon: '💜' },
-  { key: 'desconectado', label: 'Desconectarme', dotColor: 'bg-slate-400', icon: '⚪' },
+  { key: 'desconectado', label: 'Modo Detox (Silenciar)', dotColor: 'bg-slate-400', icon: '📵' },
 ];
 
 const COLOR_PRESETS = [

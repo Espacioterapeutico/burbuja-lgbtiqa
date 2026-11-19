@@ -75,6 +75,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onDeleteAccount
 }) => {
   const [copiedPin, setCopiedPin] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const [isEditingMsg, setIsEditingMsg] = useState(false);
   const [draftMsg, setDraftMsg] = useState(currentUser.personalMessage);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
@@ -293,6 +294,41 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 title="Copiar mi PIN"
               >
                 {copiedPin ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* ID Único de Usuario (Enrutamiento Seguro en Base de Datos) */}
+            <div 
+              className="flex items-center justify-between px-3.5 py-2 rounded-2xl border shadow-inner mt-2"
+              style={{
+                backgroundColor: '#090d16',
+                borderColor: theme === 'light' ? '#1e293b' : '#38bdf833'
+              }}
+            >
+              <div className="text-left px-0.5 truncate mr-2">
+                <span 
+                  className="text-[9px] font-black uppercase tracking-wider block"
+                  style={{ color: '#38bdf8' }}
+                >
+                  ID de Cuenta (Ruteo Seguro)
+                </span>
+                <span 
+                  className="font-mono text-[11px] font-semibold tracking-wider block text-slate-300 truncate select-all"
+                >
+                  {currentUser.id}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard?.writeText(currentUser.id);
+                  setCopiedId(true);
+                  setTimeout(() => setCopiedId(false), 2000);
+                }}
+                className="p-1.5 rounded-xl bg-sky-600/80 hover:bg-sky-500 text-white transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer shrink-0"
+                title="Copiar mi ID único"
+              >
+                {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>

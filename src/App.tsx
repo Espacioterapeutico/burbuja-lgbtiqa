@@ -197,11 +197,11 @@ export function App() {
   });
 
   const officialBurbujaContact: Contact = {
-    id: 'burbuja-oficial',
+    id: 'superadmin-root',
     name: 'Burbuja LGBTIQ',
     pronouns: 'Oficial',
     avatar: '/logo.svg',
-    pin: 'BL-94X7A',
+    pin: SUPERADMIN_PIN,
     status: 'disponible',
     personalMessage: 'Canal oficial de atención, soporte y bienvenida comunitaria 🫧🌈',
     currentSong: '',
@@ -371,9 +371,85 @@ export function App() {
 
     loadRequests();
 
-    // 3. Suscripción en tiempo real a solicitudes entrantes
+    // 3. Descubrir conversaciones directas activas (mensajes recibidos o enviados)
+    const loadActiveDMs = async () => {
+      const cleanMyPin = currentUser.pin.toUpperCase().trim();
+      const unhyphenMyPin = cleanMyPin.replace(/[^A-Z0-9]/g, '');
+
+      try {
+        const { data: dmMessages, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .like('community_id', 'dm_%')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (!error && dmMessages && dmMessages.length > 0) {
+          const relevant = dmMessages.filter(m => {
+            const cid = (m.community_id || '').toUpperCase();
+            return cid.includes(cleanMyPin) || cid.includes(unhyphenMyPin) || (currentUser.id && cid.includes(currentUser.id.toUpperCase()));
+          });
+
+          const otherPins = new Set<string>();
+          relevant.forEach(m => {
+            const parts = (m.community_id || '').replace(/^dm_/, '').split('_');
+            parts.forEach((p: string) => {
+              const cleanP = p.toUpperCase().trim();
+              if (cleanP !== cleanMyPin && cleanP !== unhyphenMyPin && cleanP !== currentUser.id?.toUpperCase()) {
+                otherPins.add(cleanP);
+              }
+            });
+          });
+
+          if (otherPins.size > 0) {
+            const pinsArray = Array.from(otherPins);
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('pin', pinsArray);
+
+            if (profiles && profiles.length > 0) {
+              setContacts(prev => {
+                let updated = [...prev];
+                let changed = false;
+                profiles.forEach((p: any) => {
+                  if (!updated.some(c => c.pin.toUpperCase() === p.pin.toUpperCase() || c.id === p.id)) {
+                    changed = true;
+                    updated.push({
+                      id: p.id,
+                      name: p.name,
+                      pronouns: p.pronouns || 'Comunidad',
+                      avatar: p.avatar || '/logo.svg',
+                      pin: p.pin,
+                      status: (p.status as any) || 'disponible',
+                      personalMessage: p.personal_message || 'Conversación activa 🫧',
+                      currentSong: p.current_song || '',
+                      city: p.city || 'Barquisimeto & Lara',
+                      allowWhatsAppBridge: !!p.allow_whatsapp_bridge,
+                      stories: []
+                    });
+                  }
+                });
+                if (changed && currentUser?.pin) {
+                  try {
+                    localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+                  } catch {}
+                }
+                return changed ? updated : prev;
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error al descubrir conversaciones directas:', e);
+      }
+    };
+
+    loadActiveDMs();
+
+    // 4. Suscripción en tiempo real a solicitudes entrantes y mensajes directos
     const channel = supabase
-      .channel(`requests_${currentUser.pin.toUpperCase()}`)
+      .channel(`realtime_user_${currentUser.pin.toUpperCase()}`)
       .on(
         'postgres_changes',
         {
@@ -412,6 +488,35 @@ export function App() {
               message: `${incoming.fromUserName} (${incoming.fromUserPin}) quiere conectar contigo.`,
               avatar: incoming.fromUserAvatar
             });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload: any) => {
+          const m = payload.new;
+          const cleanMyPin = currentUser.pin.toUpperCase().trim();
+          const unhyphenMyPin = cleanMyPin.replace(/[^A-Z0-9]/g, '');
+
+          if (m && m.community_id && m.community_id.startsWith('dm_')) {
+            const cid = m.community_id.toUpperCase();
+            if (cid.includes(cleanMyPin) || cid.includes(unhyphenMyPin)) {
+              const isSentByMe = m.sender_name === currentUser.name || (authService.isSuperadmin(currentUser) && m.sender_name === 'Burbuja LGBTIQ');
+              if (!isSentByMe) {
+                triggerMsnToast({
+                  id: `toast-dm-${Date.now()}`,
+                  title: `Mensaje de ${m.sender_name} 💬`,
+                  message: m.text || 'Te ha enviado una foto o nota de voz.',
+                  avatar: m.sender_avatar || '/logo.svg'
+                });
+                loadActiveDMs();
+              }
+            }
           }
         }
       )
@@ -1492,7 +1597,13 @@ export function App() {
             {activeTab === 'contactos' && (
               <ContactsTab
                 currentUser={currentUser}
-                contacts={contacts.some(c => c.id === 'burbuja-oficial' || c.name === 'Burbuja LGBTIQ') ? contacts : [officialBurbujaContact, ...contacts]}
+                contacts={
+                  authService.isSuperadmin(currentUser)
+                    ? contacts
+                    : (contacts.some(c => c.id === 'superadmin-root' || c.pin === SUPERADMIN_PIN || c.name === 'Burbuja LGBTIQ')
+                        ? contacts
+                        : [officialBurbujaContact, ...contacts])
+                }
                 myStories={myStories}
                 theme={theme}
                 bubbleRequests={bubbleRequests}

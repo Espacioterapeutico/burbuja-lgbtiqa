@@ -42,11 +42,19 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
   if (!isOpen || !contact) return null;
 
   const isAdmin = authService.isSuperadmin(currentUser);
-  const isOfficialRecipient = contact.id === 'burbuja-oficial' || contact.pin === SUPERADMIN_PIN || contact.name === 'Burbuja LGBTIQ';
+  const isOfficialRecipient = contact.id === 'superadmin-root' || contact.id === 'burbuja-oficial' || contact.pin === SUPERADMIN_PIN || contact.name === 'Burbuja LGBTIQ';
 
   // Identificador único y determinista para la conversación directa entre dos usuarios
-  const myPin = (currentUser.pin || currentUser.id || '').toUpperCase().trim();
-  const theirPin = (contact.pin || contact.id || '').toUpperCase().trim();
+  const myPin = (isAdmin && (currentUser.pin === SUPERADMIN_PIN || currentUser.id === 'superadmin-root')
+    ? SUPERADMIN_PIN
+    : (currentUser.pin || currentUser.id || '')
+  ).toUpperCase().trim();
+
+  const theirPin = (isOfficialRecipient
+    ? SUPERADMIN_PIN
+    : (contact.pin || contact.id || '')
+  ).toUpperCase().trim();
+
   const directChatId = `dm_${[myPin, theirPin].sort().join('_')}`;
 
   // Cargar mensajes existentes y suscribirse a cambios en tiempo real

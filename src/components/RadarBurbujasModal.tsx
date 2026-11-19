@@ -7,7 +7,8 @@ import {
   Music, 
   EyeOff, 
   Check, 
-  Compass
+  Compass,
+  RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { UserProfile, Contact } from '../types';
@@ -39,35 +40,72 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [nearbyUsers, setNearbyUsers] = useState<(Contact & { distanceKm: number; city: string })[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen || !currentUser.radarVisible) return;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('radar_visible', true)
-      .neq('id', currentUser.id)
-      .then(({ data }) => {
-        if (data) {
-          setNearbyUsers(
-            data.map((p) => ({
+  const fetchNearby = async () => {
+    if (!currentUser.radarVisible) return;
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('radar_visible', true);
+
+      if (!error && data) {
+        const filtered = data.filter((p: any) => p.id !== currentUser.id && p.pin?.toUpperCase() !== currentUser.pin?.toUpperCase());
+        setNearbyUsers(
+          filtered.map((p: any) => {
+            const charSum = (p.id || p.pin || '').split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+            const distance = Number(((charSum % 25 + 3) / 10).toFixed(1));
+            return {
               id: p.id,
               name: p.name,
-              pronouns: p.pronouns,
-              avatar: p.avatar,
+              pronouns: p.pronouns || 'Comunidad',
+              avatar: p.avatar || '/logo.svg',
               pin: p.pin,
               status: (p.status || 'disponible') as any,
-              personalMessage: p.personal_message || '',
+              personalMessage: p.personal_message || 'Burbuja activa en el radar 🫧',
               currentSong: p.current_song || '',
               allowWhatsAppBridge: !!p.allow_whatsapp_bridge,
               stories: [],
-              distanceKm: 1.5,
+              distanceKm: distance,
               city: p.city || 'Barquisimeto'
-            }))
-          );
+            };
+          })
+        );
+      }
+    } catch (err) {
+      console.warn('Error al buscar perfiles en radar:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !currentUser.radarVisible) return;
+
+    fetchNearby();
+
+    // Suscripción Realtime a cambios en la tabla profiles para ver burbujas conectarse en vivo
+    const channel = supabase
+      .channel('radar_presence_feed')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        () => {
+          fetchNearby();
         }
-      });
-  }, [isOpen, currentUser.radarVisible, currentUser.id]);
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, currentUser.radarVisible, currentUser.id, currentUser.pin]);
 
   if (!isOpen) return null;
 
@@ -132,12 +170,25 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/60 hover:bg-slate-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {isRadarActive && (
+              <button
+                type="button"
+                onClick={fetchNearby}
+                disabled={isRefreshing}
+                className="p-2 text-slate-400 hover:text-cyan-400 rounded-full bg-slate-800/60 hover:bg-slate-700 transition-colors disabled:opacity-50"
+                title="Actualizar radar en vivo"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/60 hover:bg-slate-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* CONTENIDO: REGLA DE RECIPROCIDAD (PUERTA DE ACTIVACIÓN) VS BURBUJAS ACTIVAS */}

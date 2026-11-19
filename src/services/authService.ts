@@ -352,6 +352,20 @@ export const authService = {
       try {
         localStorage.setItem('burbuja_user', JSON.stringify(SUPERADMIN_PROFILE));
       } catch {}
+      try {
+        await supabase.from('profiles').upsert([{
+          id: 'superadmin-root',
+          name: 'Superadmin / Fundador',
+          pronouns: 'Sistema',
+          avatar: SUPERADMIN_PROFILE.avatar,
+          pin: SUPERADMIN_PIN,
+          cedula_hash: 'superadmin-auth',
+          status: 'disponible',
+          personal_message: 'Canal oficial de la Burbuja 🫧',
+          city: 'Barquisimeto',
+          is_enabled: true
+        }], { onConflict: 'id' });
+      } catch {}
       return SUPERADMIN_PROFILE;
     }
 
@@ -674,7 +688,7 @@ export const authService = {
 
   // ACTUALIZAR PERFIL EN SUPABASE Y LOCALSTORAGE
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
-    if (!userId || userId === 'guest' || userId === 'superadmin-root') return;
+    if (!userId || userId === 'guest') return;
 
     const dbUpdates: Record<string, any> = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
@@ -688,12 +702,25 @@ export const authService = {
     if (updates.radarVisible !== undefined) dbUpdates.radar_visible = updates.radarVisible;
 
     if (Object.keys(dbUpdates).length > 0) {
-      await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+      if (userId === 'superadmin-root') {
+        await supabase.from('profiles').upsert([{
+          id: 'superadmin-root',
+          name: SUPERADMIN_PROFILE.name,
+          pronouns: SUPERADMIN_PROFILE.pronouns,
+          avatar: SUPERADMIN_PROFILE.avatar,
+          pin: SUPERADMIN_PIN,
+          cedula_hash: 'superadmin-auth',
+          status: 'disponible',
+          ...dbUpdates
+        }], { onConflict: 'id' });
+      } else {
+        await supabase.from('profiles').update(dbUpdates).eq('id', userId);
+      }
     }
 
     try {
       const current = this.getSavedUser();
-      if (current && current.id === userId) {
+      if (current && (current.id === userId || (userId === 'superadmin-root' && current.pin === SUPERADMIN_PIN))) {
         localStorage.setItem('burbuja_user', JSON.stringify({ ...current, ...updates }));
       }
     } catch {}

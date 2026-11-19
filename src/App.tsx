@@ -1113,10 +1113,21 @@ export function App() {
   };
 
   const handleToggleRadarVisible = (active: boolean) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      radarVisible: active
-    }));
+    setCurrentUser(prev => {
+      const updated = {
+        ...prev,
+        radarVisible: active
+      };
+      try {
+        localStorage.setItem('burbuja_user', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    if (currentUser?.id && currentUser.id !== 'guest') {
+      authService.updateProfile(currentUser.id, { radarVisible: active });
+    }
+
     triggerMsnToast({
       id: `toast-radar-${Date.now()}`,
       title: active ? 'Tu Burbuja está Activa 🫧' : 'Burbuja Oculta 🫥',

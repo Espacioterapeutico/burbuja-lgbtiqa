@@ -32,6 +32,52 @@ export function playMsnOnlineChime() {
   }
 }
 
+/**
+ * Efecto de sonido nítido de burbuja de jabón que baja y explota (Bubble Pop)
+ */
+export function playBubblePopSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    // 1. Barrido de frecuencia característico de burbuja (pop rápido)
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.exponentialRampToValueAtTime(1150, now + 0.07);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.07);
+
+    // 2. Micro-eco suave de agua
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(800, now + 0.02);
+    osc2.frequency.exponentialRampToValueAtTime(1400, now + 0.06);
+    gain2.gain.setValueAtTime(0.15, now + 0.02);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+
+    osc2.start(now + 0.02);
+    osc2.stop(now + 0.06);
+  } catch (err) {
+    console.warn('Audio playback error:', err);
+  }
+}
+
 export function playAlarmSound() {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

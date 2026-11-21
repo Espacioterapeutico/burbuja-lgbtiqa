@@ -29,6 +29,7 @@ import { Logo } from './components/Logo';
 import { ApkDownloadModal } from './components/ApkDownloadModal';
 import { AdminBottomMenu } from './components/AdminBottomMenu';
 import { BroadcastModal } from './components/BroadcastModal';
+import { BubbleStatusNotificationContainer, type StatusNotificationItem } from './components/BubbleStatusNotification';
 import { Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -226,6 +227,34 @@ export function App() {
 
   // Reports state (inicia con datos simulados en local dev o vacío en producción)
   const [reports, setReports] = useState<UserReport[]>(() => useMockData ? mockReports : []);
+
+  // Notificaciones especiales tipo Burbuja Flotante de Estados (pop rápido)
+  const [bubbleStatusNotifications, setBubbleStatusNotifications] = useState<StatusNotificationItem[]>([]);
+
+  const triggerBubbleStatusNotification = (item: StatusNotificationItem) => {
+    setBubbleStatusNotifications(prev => [item, ...prev.slice(0, 2)]);
+  };
+
+  const getStatusLabelText = (status: UserStatus): string => {
+    switch (status) {
+      case 'disponible':
+        return 'está Disponible 🟢';
+      case 'desconectado':
+        return 'se ha desconectado 🍃';
+      case 'ausente':
+        return 'está Ausente 🟡';
+      case 'ocupado':
+        return 'está Ocupado 🔴';
+      case 'en_crisis':
+        return 'necesita apoyo (En Crisis) 💜';
+      case 'en_fiesta':
+        return 'está De Fiesta 🎉';
+      case 'emergencia':
+        return 'ha activado Emergencia 🚨';
+      default:
+        return 'ha actualizado su estado 🫧';
+    }
+  };
 
   // Cargar usuarios, comunidades y denuncias reales desde Supabase (solo si no estamos usando la base ficticia local)
   useEffect(() => {
@@ -643,10 +672,89 @@ export function App() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload: any) => {
+          const updated = payload.new;
+          if (!updated || !updated.status) return;
+          const cleanMyPin = currentUser.pin.toUpperCase().trim();
+          const updatedPin = (updated.pin || '').toUpperCase().trim();
+          if (updatedPin === cleanMyPin || updated.id === currentUser.id) return;
+
+          const newStatus = updated.status as UserStatus;
+
+          setContacts(prev => {
+            const match = prev.find(
+              c => (c.id && c.id === updated.id) || (updatedPin && c.pin?.toUpperCase().trim() === updatedPin)
+            );
+            if (!match) return prev;
+            if (match.status === newStatus) return prev;
+
+            triggerBubbleStatusNotification({
+              id: `bubble-${Date.now()}-${Math.random()}`,
+              userName: updated.name || match.name,
+              userAvatar: updated.avatar || match.avatar || '/logo.svg',
+              userPin: updated.pin,
+              status: newStatus,
+              message: getStatusLabelText(newStatus)
+            });
+
+            const nextContacts = prev.map(c => (c.id === match.id ? { ...c, status: newStatus } : c));
+            if (currentUser?.pin) {
+              try {
+                localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(nextContacts));
+              } catch {}
+            }
+            return nextContacts;
+          });
+        }
+      )
+      .subscribe();
+
+    // 5. Suscripción Realtime a difusión instantánea de estados (Broadcast p2p)
+    const statusBroadcastChannel = supabase
+      .channel('burbuja_status_broadcast')
+      .on('broadcast', { event: 'user_status_changed' }, ({ payload }) => {
+        if (!payload || !payload.newStatus) return;
+        const cleanMyPin = currentUser.pin.toUpperCase().trim();
+        const incomingPin = (payload.userPin || '').toUpperCase().trim();
+        if (incomingPin === cleanMyPin || payload.userId === currentUser.id) return;
+
+        setContacts(prev => {
+          const match = prev.find(
+            c => (c.id && c.id === payload.userId) || (incomingPin && c.pin?.toUpperCase().trim() === incomingPin)
+          );
+          if (!match) return prev;
+          if (match.status === payload.newStatus) return prev;
+
+          triggerBubbleStatusNotification({
+            id: `bubble-${Date.now()}-${Math.random()}`,
+            userName: payload.userName || match.name,
+            userAvatar: payload.userAvatar || match.avatar || '/logo.svg',
+            userPin: payload.userPin,
+            status: payload.newStatus,
+            message: getStatusLabelText(payload.newStatus)
+          });
+
+          const nextContacts = prev.map(c => (c.id === match.id ? { ...c, status: payload.newStatus } : c));
+          if (currentUser?.pin) {
+            try {
+              localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(nextContacts));
+            } catch {}
+          }
+          return nextContacts;
+        });
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(statusBroadcastChannel);
     };
   }, [currentUser?.pin]);
 
@@ -678,6 +786,25 @@ export function App() {
 
     setCurrentUser(prev => ({ ...prev, ...profileUpdates }));
     authService.updateProfile(currentUser.id, profileUpdates);
+
+    // Difundir cambio de estado a otros usuarios conectados en tiempo real
+    try {
+      const statusBroadcastChannel = supabase.channel('burbuja_status_broadcast');
+      statusBroadcastChannel.send({
+        type: 'broadcast',
+        event: 'user_status_changed',
+        payload: {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userAvatar: currentUser.avatar,
+          userPin: currentUser.pin,
+          newStatus,
+          prevStatus: currentUser.status
+        }
+      });
+    } catch (e) {
+      console.warn('Error al transmitir cambio de estado:', e);
+    }
 
     // Reconnecting from Detox
     if (wasDetox && newStatus !== 'desconectado') {
@@ -1668,6 +1795,10 @@ export function App() {
     return (
       <div className="min-h-screen w-full bg-black text-slate-100 flex flex-col">
         <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
+        <BubbleStatusNotificationContainer
+          notifications={bubbleStatusNotifications}
+          onDismiss={(id) => setBubbleStatusNotifications(prev => prev.filter(n => n.id !== id))}
+        />
         <MSNToastContainer toasts={toasts} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
       </div>
     );
@@ -1862,6 +1993,12 @@ export function App() {
           onOpenAdminMenu={() => setIsAdminMenuOpen(true)}
         />
       )}
+
+      {/* 2. Notificaciones de Estado: Burbuja Flotante que Baja y Explota */}
+      <BubbleStatusNotificationContainer
+        notifications={bubbleStatusNotifications}
+        onDismiss={(id) => setBubbleStatusNotifications(prev => prev.filter(n => n.id !== id))}
+      />
 
       {/* 3. Notificaciones Retro MSN */}
       <MSNToastContainer

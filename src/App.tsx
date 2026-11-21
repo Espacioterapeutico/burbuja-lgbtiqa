@@ -141,7 +141,7 @@ export function App() {
 
   // Communities dynamic state (inicia con datos ficticios en local dev o vacío en producción)
   const [communities, setCommunities] = useState<Community[]>(() => useMockData ? communitiesMock : []);
-  const [selectedCommunity, setSelectedCommunity] = useState<Community>(() => useMockData && communitiesMock.length > 0 ? communitiesMock[0] : emptyCommunityFallback);
+  const [selectedCommunity, setSelectedCommunity] = useState<Community>(emptyCommunityFallback);
   const [posts] = useState<CommunityPost[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
@@ -285,7 +285,7 @@ export function App() {
             const found = mapped.find(m => m.id === prev.id);
             if (found) return found;
           }
-          return mapped[0];
+          return emptyCommunityFallback;
         });
       }
     };

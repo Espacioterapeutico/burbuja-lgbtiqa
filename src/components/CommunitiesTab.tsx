@@ -98,9 +98,6 @@ export const CommunitiesTab: React.FC<CommunitiesTabProps> = ({
             <h1 className={`text-xl font-black ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
               Comunidades
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Espacios seguros, colectivos y foros en Barquisimeto & Lara
-            </p>
           </div>
 
           <button

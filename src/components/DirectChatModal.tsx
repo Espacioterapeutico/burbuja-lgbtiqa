@@ -22,6 +22,7 @@ import type { Contact, UserProfile, ChatMessage } from '../types';
 import { playVoiceNoteAudio, stopVoiceNoteAudio, playZumpSound } from '../utils/sound';
 import { authService, SUPERADMIN_PIN } from '../services/authService';
 import { supabase } from '../lib/supabase';
+import { useBackHandler } from '../utils/navigationManager';
 
 interface DirectChatModalProps {
   contact: Contact | null;
@@ -109,6 +110,12 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
   const [viewOncePhoto, setViewOncePhoto] = useState<{ id: string; url: string } | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isZumping, setIsZumping] = useState(false);
+
+  // Manejo de gestos hacia atrás / Back button nativo
+  useBackHandler('direct-chat-zoom', !!zoomPhoto, () => setZoomPhoto(null), 40);
+  useBackHandler('direct-chat-view-once', !!viewOncePhoto, () => setViewOncePhoto(null), 40);
+  useBackHandler('direct-chat-menu', isMenuOpen, () => setIsMenuOpen(false), 30);
+  useBackHandler('direct-chat-modal', isOpen, onClose, 20);
 
   // Historial de IDs de fotos vistas una vez
   const [viewedOnceIds, setViewedOnceIds] = useState<string[]>(() => {

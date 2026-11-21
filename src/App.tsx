@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { 
   UserProfile, 
   Contact, 
@@ -30,6 +30,7 @@ import { ApkDownloadModal } from './components/ApkDownloadModal';
 import { AdminBottomMenu } from './components/AdminBottomMenu';
 import { BroadcastModal } from './components/BroadcastModal';
 import { BubbleStatusNotificationContainer, type StatusNotificationItem } from './components/BubbleStatusNotification';
+import { navigationManager } from './utils/navigationManager';
 import { Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -169,6 +170,225 @@ export function App() {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const [isOfficialStoryCreation, setIsOfficialStoryCreation] = useState(false);
+
+  // Navegación nativa por gestos y botón atrás (evitar salir sin querer)
+  const [showExitToast, setShowExitToast] = useState(false);
+  const exitToastTimerRef = useRef<any>(null);
+  const lastBackPressTimeRef = useRef<number>(0);
+
+  const backNavigationStateRef = useRef({
+    reportTargetContact,
+    isSuperadminOpen,
+    isBroadcastModalOpen,
+    isApkModalOpen,
+    isCommunityRolesOpen,
+    isCreateCommunityOpen,
+    isExploreOpen,
+    isCreateStoryOpen,
+    selectedStoryContact,
+    isRadarOpen,
+    activeDirectChatContact,
+    isSharePINOpen,
+    isProfileOpen,
+    isAddContactOpen,
+    isAdminMenuOpen,
+    selectedCommunity,
+    activeTab
+  });
+
+  useEffect(() => {
+    backNavigationStateRef.current = {
+      reportTargetContact,
+      isSuperadminOpen,
+      isBroadcastModalOpen,
+      isApkModalOpen,
+      isCommunityRolesOpen,
+      isCreateCommunityOpen,
+      isExploreOpen,
+      isCreateStoryOpen,
+      selectedStoryContact,
+      isRadarOpen,
+      activeDirectChatContact,
+      isSharePINOpen,
+      isProfileOpen,
+      isAddContactOpen,
+      isAdminMenuOpen,
+      selectedCommunity,
+      activeTab
+    };
+  }, [
+    reportTargetContact,
+    isSuperadminOpen,
+    isBroadcastModalOpen,
+    isApkModalOpen,
+    isCommunityRolesOpen,
+    isCreateCommunityOpen,
+    isExploreOpen,
+    isCreateStoryOpen,
+    selectedStoryContact,
+    isRadarOpen,
+    activeDirectChatContact,
+    isSharePINOpen,
+    isProfileOpen,
+    isAddContactOpen,
+    isAdminMenuOpen,
+    selectedCommunity,
+    activeTab
+  ]);
+
+  const handleGlobalBackAction = (): boolean => {
+    const s = backNavigationStateRef.current;
+
+    // 1. Modales de seguridad / reporte
+    if (s.reportTargetContact) {
+      setReportTargetContact(null);
+      return true;
+    }
+
+    // 2. Modales de administración
+    if (s.isSuperadminOpen) {
+      setIsSuperadminOpen(false);
+      return true;
+    }
+    if (s.isBroadcastModalOpen) {
+      setIsBroadcastModalOpen(false);
+      return true;
+    }
+    if (s.isCommunityRolesOpen) {
+      setIsCommunityRolesOpen(false);
+      return true;
+    }
+    if (s.isAdminMenuOpen) {
+      setIsAdminMenuOpen(false);
+      return true;
+    }
+
+    // 3. Modales de historias
+    if (s.selectedStoryContact) {
+      setSelectedStoryContact(null);
+      return true;
+    }
+    if (s.isCreateStoryOpen) {
+      setIsCreateStoryOpen(false);
+      setIsOfficialStoryCreation(false);
+      return true;
+    }
+
+    // 4. Modales de usuario / contacto
+    if (s.activeDirectChatContact) {
+      setActiveDirectChatContact(null);
+      return true;
+    }
+    if (s.isRadarOpen) {
+      setIsRadarOpen(false);
+      return true;
+    }
+    if (s.isAddContactOpen) {
+      setIsAddContactOpen(false);
+      return true;
+    }
+    if (s.isSharePINOpen) {
+      setIsSharePINOpen(false);
+      return true;
+    }
+    if (s.isProfileOpen) {
+      setIsProfileOpen(false);
+      return true;
+    }
+
+    // 5. Modales de comunidades
+    if (s.isExploreOpen) {
+      setIsExploreOpen(false);
+      return true;
+    }
+    if (s.isCreateCommunityOpen) {
+      setIsCreateCommunityOpen(false);
+      return true;
+    }
+    if (s.isApkModalOpen) {
+      setIsApkModalOpen(false);
+      return true;
+    }
+
+    // 6. Sub-vista de comunidad abierta (detalles/chat/muro)
+    if (s.selectedCommunity && s.selectedCommunity.id !== 'none') {
+      setSelectedCommunity(emptyCommunityFallback);
+      return true;
+    }
+
+    // 7. Pestañas secundarias (Contactos o Perfil -> volver a Comunidades)
+    if (s.activeTab !== 'comunidades') {
+      setActiveTab('comunidades');
+      return true;
+    }
+
+    // 8. Pantalla raíz (activeTab === 'comunidades', sin modales, sin comunidad abierta):
+    // Doble pulsación para salir
+    const now = Date.now();
+    if (now - lastBackPressTimeRef.current < 2000) {
+      // Segunda pulsación confirmada dentro de 2 segundos -> Salir
+      return false;
+    }
+
+    // Primera pulsación en la raíz -> Mostrar aviso
+    lastBackPressTimeRef.current = now;
+    setShowExitToast(true);
+    if (exitToastTimerRef.current) clearTimeout(exitToastTimerRef.current);
+    exitToastTimerRef.current = setTimeout(() => {
+      setShowExitToast(false);
+    }, 2000);
+
+    return true;
+  };
+
+  useEffect(() => {
+    // Inicializar la barrera de historial para interceptar gestos hacia atrás y botón nativo
+    try {
+      window.history.replaceState({ __burbuja_barrier: false, root: true }, '', window.location.pathname + window.location.search);
+      window.history.pushState({ __burbuja_barrier: true, active: true }, '', window.location.pathname + window.location.search);
+    } catch {}
+
+    const handlePopState = () => {
+      if (navigationManager.getIsExiting()) {
+        return;
+      }
+
+      // 1. Manejadores de subcomponentes (menús contextuales, zoom de imágenes, bottom sheets)
+      const handledBySubcomponent = navigationManager.runHandlers();
+      if (handledBySubcomponent) {
+        window.history.pushState({ __burbuja_barrier: true, active: true }, '', window.location.pathname + window.location.search);
+        return;
+      }
+
+      // 2. Manejadores de pantallas y modales globales
+      const handledByGlobal = handleGlobalBackAction();
+      if (handledByGlobal) {
+        window.history.pushState({ __burbuja_barrier: true, active: true }, '', window.location.pathname + window.location.search);
+        return;
+      }
+
+      // 3. Salida permitida: usuario presionó atrás 2 veces seguidas en la raíz
+      navigationManager.setExiting(true);
+      window.history.back();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        const handledBySub = navigationManager.runHandlers();
+        if (!handledBySub) {
+          handleGlobalBackAction();
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Historias oficiales de Burbuja LGBTIQ (Visibles para toda la comunidad sin necesidad de agregarlo)
   const [officialStories, setOfficialStories] = useState<{
@@ -1859,6 +2079,14 @@ export function App() {
           onDismiss={(id) => setBubbleStatusNotifications(prev => prev.filter(n => n.id !== id))}
         />
         <MSNToastContainer toasts={toasts} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+
+        {/* Aviso flotante nativo: Presiona atrás otra vez para salir */}
+        {showExitToast && (
+          <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2.5 rounded-full bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold shadow-2xl border border-slate-700 pointer-events-none animate-in fade-in zoom-in-95 duration-150 flex items-center gap-2">
+            <img src="/logo.svg" alt="Burbuja" className="w-4 h-4 animate-pulse" />
+            <span>Presiona atrás otra vez para salir</span>
+          </div>
+        )}
       </div>
     );
   }
@@ -2201,6 +2429,14 @@ export function App() {
         onClose={() => setIsBroadcastModalOpen(false)}
         onSendBroadcast={handleSendBroadcast}
       />
+
+      {/* Aviso flotante nativo: Presiona atrás otra vez para salir */}
+      {showExitToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2.5 rounded-full bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold shadow-2xl border border-slate-700 pointer-events-none animate-in fade-in zoom-in-95 duration-150 flex items-center gap-2">
+          <img src="/logo.svg" alt="Burbuja" className="w-4 h-4 animate-pulse" />
+          <span>Presiona atrás otra vez para salir</span>
+        </div>
+      )}
     </div>
   );
 }

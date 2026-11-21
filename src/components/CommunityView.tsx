@@ -36,6 +36,7 @@ import confetti from 'canvas-confetti';
 import type { Community, CommunityPost, ChatMessage, UserProfile, CommunityRole, Contact } from '../types';
 import { playZumpSound, playVoiceNoteAudio, stopVoiceNoteAudio } from '../utils/sound';
 import { build7525Feed } from '../utils/feedAlgorithm';
+import { useBackHandler } from '../utils/navigationManager';
 
 interface CommunityViewProps {
   communities: Community[];
@@ -141,6 +142,15 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [addedContactPins, setAddedContactPins] = useState<Record<string, boolean>>({});
+
+  // Manejo de gestos y botón atrás dentro de la vista de comunidad
+  useBackHandler('community-zoom-image', !!zoomImage, () => setZoomImage(null), 40);
+  useBackHandler('community-direct-chat-user', !!activeDirectChatUser, () => setActiveDirectChatUser(null), 35);
+  useBackHandler('community-selected-chat-user', !!selectedChatUser, () => setSelectedChatUser(null), 30);
+  useBackHandler('community-metrics', !!selectedPostMetrics, () => setSelectedPostMetrics(null), 30);
+  useBackHandler('community-comments', !!activeCommentsPostId, () => setActiveCommentsPostId(null), 25);
+  useBackHandler('community-floating-chat', isChatOpen, () => setIsChatOpen(false), 20);
+  useBackHandler('community-view-screen', !!onBack, () => onBack?.(), 10);
 
   // Mensajería 1 a 1 en directo (Direct Messages)
   const [directMessages, setDirectMessages] = useState<Record<string, ChatMessage[]>>({

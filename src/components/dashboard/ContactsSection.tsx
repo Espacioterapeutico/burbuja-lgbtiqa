@@ -22,6 +22,7 @@ import type { Contact, BubbleConnectionRequest } from '../../types';
 import { StatusBadge, getStatusConfig } from '../StatusBadge';
 import { BlockedDossiersSection } from './BlockedDossiersSection';
 import { SoapBubble } from '../SoapBubble';
+import { useBackHandler } from '../../utils/navigationManager';
 
 interface ContactsSectionProps {
   contacts: Contact[];
@@ -67,6 +68,10 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
   const [selectedBlockReason, setSelectedBlockReason] = useState(BLOCK_REASONS[0]);
   const [customBlockReason, setCustomBlockReason] = useState('');
   const [actionMenuContact, setActionMenuContact] = useState<Contact | null>(null);
+
+  useBackHandler('contacts-action-menu', !!actionMenuContact, () => setActionMenuContact(null), 30);
+  useBackHandler('contacts-delete-confirm', !!contactToDelete, () => setContactToDelete(null), 35);
+  useBackHandler('contacts-block-confirm', !!blockingTarget, () => setBlockingTarget(null), 35);
 
   const longPressTimerRef = useRef<any>(null);
   const isLongPressTriggeredRef = useRef(false);

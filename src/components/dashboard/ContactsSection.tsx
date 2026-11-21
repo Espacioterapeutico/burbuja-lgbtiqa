@@ -308,7 +308,7 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
 
                 {/* Info del Contacto */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-sm text-slate-100 group-hover:text-pink-300 transition-colors truncate flex items-center gap-1.5">
                       {contact.name}
                       {(contact.id === 'superadmin-root' || contact.id === 'burbuja-oficial' || contact.pin === 'BL-94X7A' || contact.name === 'Burbuja LGBTIQ') && (
@@ -317,6 +317,11 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                         </span>
                       )}
                     </span>
+                    {contact.unreadCount && contact.unreadCount > 0 ? (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full bg-pink-600 text-white text-[11px] font-black shadow-md shadow-pink-600/50 animate-pulse">
+                        ({contact.unreadCount})
+                      </span>
+                    ) : null}
                     <span className="text-[10px] text-pink-300 font-semibold">{contact.pronouns}</span>
                     <StatusBadge 
                       status={contact.status} 
@@ -327,8 +332,12 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                     />
                   </div>
 
-                  <p className="text-xs text-slate-400 truncate mt-0.5 max-w-[200px] sm:max-w-[260px]">
-                    {contact.personalMessage}
+                  <p className={`text-xs truncate mt-0.5 max-w-[200px] sm:max-w-[260px] ${
+                    contact.unreadCount && contact.unreadCount > 0
+                      ? 'text-pink-200 font-bold'
+                      : 'text-slate-400'
+                  }`}>
+                    {contact.lastMessage ? `💬 ${contact.lastMessage}` : contact.personalMessage}
                   </p>
 
                   {contact.currentSong && (
@@ -341,14 +350,23 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
               </div>
 
               {/* Botones Limpios: Chat directo + Menú de opciones (Long-Press o 3 puntos) */}
-              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => onOpenDirectChat?.(contact)}
-                  className="p-2.5 rounded-2xl bg-pink-600/10 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/30 transition-all active:scale-95 shadow-sm"
-                  title="Abrir chat privado 1 a 1"
+                  className={`relative p-2.5 rounded-2xl border transition-all active:scale-95 shadow-sm ${
+                    contact.unreadCount && contact.unreadCount > 0
+                      ? 'bg-pink-600 text-white border-pink-400 shadow-pink-600/50 animate-bounce'
+                      : 'bg-pink-600/10 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/30'
+                  }`}
+                  title={contact.unreadCount && contact.unreadCount > 0 ? `Tienes ${contact.unreadCount} mensaje(s) nuevo(s)` : "Abrir chat privado 1 a 1"}
                 >
                   <MessageCircle className="w-4 h-4" />
+                  {contact.unreadCount && contact.unreadCount > 0 ? (
+                    <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[9px] font-black border border-slate-900 shadow">
+                      {contact.unreadCount}
+                    </span>
+                  ) : null}
                 </button>
 
                 <button

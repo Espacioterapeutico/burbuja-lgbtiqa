@@ -95,6 +95,11 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
           setChatList(mapped);
           try {
             localStorage.setItem(`burbuja_dm_${directChatId}`, JSON.stringify(mapped));
+            const cleanMyPin = currentUser.pin.toUpperCase().trim();
+            const stored = localStorage.getItem(`burbuja_dm_last_read_${cleanMyPin}`);
+            const lastReadMap = stored ? JSON.parse(stored) : {};
+            lastReadMap[theirPin] = new Date().toISOString();
+            localStorage.setItem(`burbuja_dm_last_read_${cleanMyPin}`, JSON.stringify(lastReadMap));
           } catch {}
         }
       });
@@ -130,6 +135,11 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
               const updated = [...prev, incoming];
               try {
                 localStorage.setItem(`burbuja_dm_${directChatId}`, JSON.stringify(updated));
+                const cleanMyPin = currentUser.pin.toUpperCase().trim();
+                const stored = localStorage.getItem(`burbuja_dm_last_read_${cleanMyPin}`);
+                const lastReadMap = stored ? JSON.parse(stored) : {};
+                lastReadMap[theirPin] = new Date().toISOString();
+                localStorage.setItem(`burbuja_dm_last_read_${cleanMyPin}`, JSON.stringify(lastReadMap));
               } catch {}
               return updated;
             });

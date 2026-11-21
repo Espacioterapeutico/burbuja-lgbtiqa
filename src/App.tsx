@@ -196,6 +196,9 @@ export function App() {
     ];
   });
 
+  const [officialUnreadCount, setOfficialUnreadCount] = useState(0);
+  const [officialLastMessage, setOfficialLastMessage] = useState('');
+
   const officialBurbujaContact: Contact = {
     id: 'superadmin-root',
     name: 'Burbuja LGBTIQ',
@@ -203,10 +206,12 @@ export function App() {
     avatar: '/logo.svg',
     pin: SUPERADMIN_PIN,
     status: 'disponible',
-    personalMessage: 'Canal oficial de atención, soporte y bienvenida comunitaria 🫧🌈',
+    personalMessage: officialLastMessage ? `💬 ${officialLastMessage}` : 'Canal oficial de atención, soporte y bienvenida comunitaria 🫧🌈',
     currentSong: '',
     allowWhatsAppBridge: true,
     city: 'Barquisimeto & Lara',
+    unreadCount: officialUnreadCount,
+    lastMessage: officialLastMessage,
     stories: officialStories
   };
 
@@ -429,7 +434,7 @@ export function App() {
 
     loadRequests();
 
-    // 3. Descubrir conversaciones directas activas (mensajes recibidos o enviados)
+    // 3. Descubrir conversaciones directas activas (mensajes recibidos o enviados) y calcular no leídos (n)
     const loadActiveDMs = async () => {
       const cleanMyPin = currentUser.pin.toUpperCase().trim();
       const unhyphenMyPin = cleanMyPin.replace(/[^A-Z0-9]/g, '');
@@ -440,7 +445,7 @@ export function App() {
           .select('*')
           .like('community_id', 'dm_%')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(250);
 
         if (!error && dmMessages && dmMessages.length > 0) {
           const relevant = dmMessages.filter(m => {
@@ -448,16 +453,55 @@ export function App() {
             return cid.includes(cleanMyPin) || cid.includes(unhyphenMyPin) || (currentUser.id && cid.includes(currentUser.id.toUpperCase()));
           });
 
+          // Leer mapa de última lectura guardado en LocalStorage
+          let lastReadMap: Record<string, string> = {};
+          try {
+            const stored = localStorage.getItem(`burbuja_dm_last_read_${cleanMyPin}`);
+            if (stored) lastReadMap = JSON.parse(stored);
+          } catch {}
+
+          const statsByPin: Record<string, { unreadCount: number; lastMessage: string; lastMessageTime: string }> = {};
           const otherPins = new Set<string>();
+
           relevant.forEach(m => {
             const parts = (m.community_id || '').replace(/^dm_/, '').split('_');
-            parts.forEach((p: string) => {
+            let otherKey = '';
+            for (const p of parts) {
               const cleanP = p.toUpperCase().trim();
               if (cleanP !== cleanMyPin && cleanP !== unhyphenMyPin && cleanP !== currentUser.id?.toUpperCase()) {
-                otherPins.add(cleanP);
+                otherKey = cleanP;
+                break;
               }
-            });
+            }
+            if (!otherKey) return;
+            otherPins.add(otherKey);
+
+            if (!statsByPin[otherKey]) {
+              statsByPin[otherKey] = {
+                unreadCount: 0,
+                lastMessage: m.text || (m.image_url ? '📷 Foto' : m.audio_url ? '🎤 Nota de voz' : ''),
+                lastMessageTime: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+              };
+            }
+
+            const isSentByMe = m.sender_name === currentUser.name || (authService.isSuperadmin(currentUser) && m.sender_name === 'Burbuja LGBTIQ');
+            if (!isSentByMe) {
+              const lastReadAt = lastReadMap[otherKey] || lastReadMap[otherKey.replace(/[^A-Z0-9]/g, '')] || '1970-01-01T00:00:00.000Z';
+              const msgTime = m.created_at || new Date().toISOString();
+              if (new Date(msgTime) > new Date(lastReadAt)) {
+                statsByPin[otherKey].unreadCount += 1;
+              }
+            }
           });
+
+          // Actualizar contador y último mensaje del canal oficial
+          const officialStats = statsByPin[SUPERADMIN_PIN] || statsByPin[SUPERADMIN_PIN.replace(/[^A-Z0-9]/g, '')] || statsByPin['SUPERADMIN-ROOT'];
+          if (officialStats) {
+            setOfficialUnreadCount(officialStats.unreadCount);
+            setOfficialLastMessage(officialStats.lastMessage);
+          } else {
+            setOfficialUnreadCount(0);
+          }
 
           if (otherPins.size > 0) {
             const pinsArray = Array.from(otherPins);
@@ -466,13 +510,12 @@ export function App() {
               .select('*')
               .in('pin', pinsArray);
 
-            if (profiles && profiles.length > 0) {
-              setContacts(prev => {
-                let updated = [...prev];
-                let changed = false;
+            setContacts(prev => {
+              let updated = [...prev];
+
+              if (profiles && profiles.length > 0) {
                 profiles.forEach((p: any) => {
                   if (!updated.some(c => c.pin.toUpperCase() === p.pin.toUpperCase() || c.id === p.id)) {
-                    changed = true;
                     updated.push({
                       id: p.id,
                       name: p.name,
@@ -488,14 +531,35 @@ export function App() {
                     });
                   }
                 });
-                if (changed && currentUser?.pin) {
-                  try {
-                    localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
-                  } catch {}
+              }
+
+              // Calcular unreadCount y lastMessage para cada contacto
+              updated = updated.map(c => {
+                const cleanPin = (c.pin || '').toUpperCase().trim();
+                const unhyphenPin = cleanPin.replace(/[^A-Z0-9]/g, '');
+                const cleanId = (c.id || '').toUpperCase().trim();
+                const stats = statsByPin[cleanPin] || statsByPin[unhyphenPin] || statsByPin[cleanId];
+                if (stats) {
+                  return {
+                    ...c,
+                    unreadCount: stats.unreadCount,
+                    lastMessage: stats.lastMessage,
+                    lastMessageTime: stats.lastMessageTime
+                  };
                 }
-                return changed ? updated : prev;
+                return {
+                  ...c,
+                  unreadCount: 0
+                };
               });
-            }
+
+              if (currentUser?.pin) {
+                try {
+                  localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+                } catch {}
+              }
+              return updated;
+            });
           }
         }
       } catch (e) {
@@ -566,6 +630,7 @@ export function App() {
             if (cid.includes(cleanMyPin) || cid.includes(unhyphenMyPin)) {
               const isSentByMe = m.sender_name === currentUser.name || (authService.isSuperadmin(currentUser) && m.sender_name === 'Burbuja LGBTIQ');
               if (!isSentByMe) {
+                // Notificación sonora y visual
                 triggerMsnToast({
                   id: `toast-dm-${Date.now()}`,
                   title: `Mensaje de ${m.sender_name} 💬`,
@@ -1559,12 +1624,59 @@ export function App() {
     });
   };
 
+  const handleOpenDirectChat = (contact: Contact) => {
+    setActiveDirectChatContact(contact);
+    if (!currentUser?.pin) return;
+
+    const cleanMyPin = currentUser.pin.toUpperCase().trim();
+    const contactPin = (contact.pin || contact.id || '').toUpperCase().trim();
+    const isOfficial = contact.id === 'superadmin-root' || contact.pin === SUPERADMIN_PIN || contact.name === 'Burbuja LGBTIQ';
+
+    try {
+      const stored = localStorage.getItem(`burbuja_dm_last_read_${cleanMyPin}`);
+      const lastReadMap = stored ? JSON.parse(stored) : {};
+      const nowIso = new Date().toISOString();
+      lastReadMap[contactPin] = nowIso;
+      lastReadMap[contactPin.replace(/[^A-Z0-9]/g, '')] = nowIso;
+      if (contact.id) lastReadMap[contact.id.toUpperCase()] = nowIso;
+      if (isOfficial) {
+        lastReadMap[SUPERADMIN_PIN] = nowIso;
+        lastReadMap['SUPERADMIN-ROOT'] = nowIso;
+        setOfficialUnreadCount(0);
+      }
+      localStorage.setItem(`burbuja_dm_last_read_${cleanMyPin}`, JSON.stringify(lastReadMap));
+    } catch {}
+
+    // Resetear contador de no leídos de este contacto inmediatamente en la lista
+    setContacts(prev =>
+      prev.map(c => {
+        if (
+          (contact.pin && c.pin?.toUpperCase() === contact.pin.toUpperCase()) ||
+          (contact.id && c.id === contact.id)
+        ) {
+          return { ...c, unreadCount: 0 };
+        }
+        return c;
+      })
+    );
+  };
+
+  const totalUnreadCount = contacts.reduce((sum, c) => sum + (c.unreadCount || 0), 0) + officialUnreadCount;
+
+  // Si el usuario está en modo Detox / Desconexión, pantalla completa limpia sin bordes ni contenedor reducido
+  if (isLoggedIn && isDetoxActive) {
+    return (
+      <div className="min-h-screen w-full bg-black text-slate-100 flex flex-col">
+        <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
+        <MSNToastContainer toasts={toasts} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen transition-all duration-300 ${
       theme === 'light' ? 'light-mode bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'
-    } flex flex-col justify-between ${
-      isDetoxActive ? 'filter grayscale contrast-105' : ''
-    }`}>
+    } flex flex-col justify-between`}>
       {/* Banner de Servidor Local / Modo de Pruebas Ficticio */}
       {isLocalServer && (
         <div className="bg-amber-500/15 border-b border-amber-500/30 px-3 py-1.5 text-[11px] font-bold text-amber-500 dark:text-amber-400 flex items-center justify-between z-50">
@@ -1652,8 +1764,6 @@ export function App() {
               </button>
             </div>
           </div>
-        ) : isDetoxActive ? (
-          <DetoxStandbyView onReconnect={() => handleUpdateStatus('disponible')} />
         ) : (
           <>
             {/* 1. PESTAÑA: COMUNIDADES (Inicio predeterminado) */}
@@ -1702,7 +1812,7 @@ export function App() {
                 onRemoveContact={handleRemoveContact}
                 onOpenAddContact={() => setIsAddContactOpen(true)}
                 onOpenRadar={() => setIsRadarOpen(true)}
-                onOpenDirectChat={(contact) => setActiveDirectChatContact(contact)}
+                onOpenDirectChat={handleOpenDirectChat}
                 onViewStory={(contact) => setSelectedStoryContact(contact)}
                 onOpenCreateStory={() => {
                   setIsOfficialStoryCreation(false);
@@ -1741,12 +1851,12 @@ export function App() {
       </main>
 
       {/* Barra de Navegación Inferior Fija (Estilo WhatsApp) */}
-      {isLoggedIn && !isDetoxActive && (
+      {isLoggedIn && (
         <BottomNavBar
           activeTab={activeTab}
           onChangeTab={setActiveTab}
           currentUser={currentUser}
-          pendingRequestsCount={bubbleRequests.length}
+          pendingRequestsCount={bubbleRequests.length + totalUnreadCount}
           theme={theme}
           isAdmin={authService.isSuperadmin(currentUser)}
           onOpenAdminMenu={() => setIsAdminMenuOpen(true)}
@@ -1754,12 +1864,10 @@ export function App() {
       )}
 
       {/* 3. Notificaciones Retro MSN */}
-      {!isDetoxActive && (
-        <MSNToastContainer
-          toasts={toasts}
-          onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))}
-        />
-      )}
+      <MSNToastContainer
+        toasts={toasts}
+        onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))}
+      />
 
       {/* 4. Modales Globales */}
       <GlobalModals

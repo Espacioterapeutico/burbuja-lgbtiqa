@@ -91,6 +91,9 @@ interface GlobalModalsProps {
   onToggleCommunityFreeze?: (commId: string) => void;
   onSendBroadcast?: (broadcast: GlobalBroadcast) => void;
   onLeaveCommunity?: (communityId: string) => void;
+  onDeleteContact?: (contact: Contact) => void;
+  onBlockContact?: (contact: Contact, reason?: string) => void;
+  onOpenReportContact?: (contact: Contact) => void;
 }
 
 export const GlobalModals: React.FC<GlobalModalsProps> = ({
@@ -156,7 +159,10 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
   onGrantInvitations,
   onToggleCommunityFreeze,
   onSendBroadcast,
-  onLeaveCommunity
+  onLeaveCommunity,
+  onDeleteContact,
+  onBlockContact,
+  onOpenReportContact
 }) => {
   return (
     <>
@@ -287,6 +293,9 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
           onClose={onCloseDirectChat}
           contact={activeDirectChatContact}
           currentUser={currentUser}
+          onDeleteContact={onDeleteContact}
+          onBlockContact={onBlockContact}
+          onReportContact={onOpenReportContact}
         />
       )}
     </>

@@ -168,6 +168,9 @@ export interface ChatMessage {
   audioUrl?: string; // Nota de voz instantánea
   audioDurationSeconds?: number;
   imageUrl?: string; // Foto instantánea
+  isViewOnce?: boolean; // Multimedia para ver una sola vez
+  isViewed?: boolean; // Si la foto para ver una vez ya fue abierta
+  deliveryStatus?: 'sending' | 'sent' | 'delivered'; // Estado: reloj, check o sobrecito abierto
 }
 
 export interface UserReport {

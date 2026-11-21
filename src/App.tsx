@@ -2039,6 +2039,9 @@ export function App() {
         onToggleRadarVisible={handleToggleRadarVisible}
         onSendConnectionRequest={handleSendConnectionRequest}
         onCloseDirectChat={() => setActiveDirectChatContact(null)}
+        onDeleteContact={handleRemoveContact}
+        onBlockContact={(contact, reason) => handleToggleBlockContact(contact, reason)}
+        onOpenReportContact={(contact) => setReportTargetContact(contact)}
         onToggleTheme={handleToggleTheme}
         onOpenSharePIN={() => setIsSharePINOpen(true)}
         onCloseProfile={() => setIsProfileOpen(false)}

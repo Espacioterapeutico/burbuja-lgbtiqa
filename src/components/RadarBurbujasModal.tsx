@@ -336,65 +336,92 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
 
         {/* 3. MODAL DE SOLICITUD DE "CONECTAR BURBUJAS 🫧" AL TOCAR UNA PERSONA */}
         {selectedBubbleUser && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
-            <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-700 p-5 shadow-2xl space-y-4 animate-in zoom-in-95 text-left">
-              {/* Header del perfil seleccionado */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto">
+            <div className="relative w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-700/90 p-5 sm:p-6 shadow-2xl space-y-4 animate-in zoom-in-95 text-center overflow-hidden my-auto">
+              {/* Glow decorativo de fondo */}
+              <div className="absolute -top-12 -right-12 w-36 h-36 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+
+              <button
+                onClick={() => setSelectedBubbleUser(null)}
+                className="absolute top-3.5 right-3.5 p-2 rounded-full text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors z-10"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* FOTO DE PERFIL GRANDE Y DESTACADA */}
+              <div className="flex flex-col items-center pt-1">
+                <div className="relative">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl p-1 bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 shadow-2xl shadow-pink-950/60 transition-transform hover:scale-105 duration-200">
                     <img
                       src={selectedBubbleUser.avatar}
                       alt={selectedBubbleUser.name}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-pink-500 shadow-lg"
+                      className="w-full h-full rounded-[22px] object-cover bg-slate-950 border border-slate-900"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/logo.svg';
+                      }}
                     />
-                    {(() => {
-                      const stConf = getStatusConfig(selectedBubbleUser.status, selectedBubbleUser.customStatusLabel, selectedBubbleUser.customStatusColor);
-                      return (
-                        <span 
-                          className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
-                            stConf.dotColor || ''
-                          }`}
-                          style={stConf.customColor ? { backgroundColor: stConf.customColor } : undefined}
-                        />
-                      );
-                    })()}
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-white flex items-center gap-1.5">
-                      {selectedBubbleUser.name}
-                    </h3>
-                    <p className="text-xs text-pink-400 font-medium">({selectedBubbleUser.pronouns})</p>
-                    <span className="text-[10px] text-cyan-300 font-mono flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-pink-400" />
-                      <span>{selectedBubbleUser.city} • a {selectedBubbleUser.distanceKm} km</span>
-                    </span>
-                  </div>
+
+                  {(() => {
+                    const stConf = getStatusConfig(selectedBubbleUser.status, selectedBubbleUser.customStatusLabel, selectedBubbleUser.customStatusColor);
+                    return (
+                      <span 
+                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-900 shadow-md ${
+                          stConf.dotColor || 'bg-emerald-500'
+                        }`}
+                        style={stConf.customColor ? { backgroundColor: stConf.customColor } : undefined}
+                        title={`Estado: ${stConf.label}`}
+                      />
+                    );
+                  })()}
+
+                  <span className="absolute -top-1.5 -left-1.5 text-base filter drop-shadow">🫧</span>
                 </div>
 
-                <button
-                  onClick={() => setSelectedBubbleUser(null)}
-                  className="p-1.5 rounded-full text-slate-400 hover:text-white bg-slate-800"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {/* Nombre y Datos del Usuario */}
+                <div className="mt-3 space-y-1">
+                  <h3 className="font-black text-lg text-white tracking-tight flex items-center justify-center gap-1.5">
+                    <span>{selectedBubbleUser.name}</span>
+                  </h3>
+                  
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <span className="text-xs text-pink-400 font-bold px-2.5 py-0.5 rounded-full bg-pink-950/60 border border-pink-800/50">
+                      {selectedBubbleUser.pronouns}
+                    </span>
+                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-950 text-slate-300 border border-slate-800">
+                      {selectedBubbleUser.pin}
+                    </span>
+                  </div>
+
+                  <span className="text-xs text-cyan-300 font-medium inline-flex items-center gap-1 pt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                    <span>{selectedBubbleUser.city} • a {selectedBubbleUser.distanceKm} km</span>
+                  </span>
+                </div>
               </div>
 
               {/* Mensaje Personal / "Sobre mí" */}
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed">
-                <span className="text-[10px] font-bold text-slate-400 block mb-0.5">Sobre mí:</span>
-                "{selectedBubbleUser.personalMessage}"
-              </div>
+              {selectedBubbleUser.personalMessage && (
+                <div className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800/80 text-xs text-slate-300 text-left leading-relaxed shadow-inner">
+                  <span className="text-[10px] font-bold text-pink-400 uppercase tracking-wider block mb-0.5">
+                    Sobre mí 💬
+                  </span>
+                  "{selectedBubbleUser.personalMessage}"
+                </div>
+              )}
 
               {/* Canción favorita */}
               {selectedBubbleUser.currentSong && (
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/60 border border-slate-700 text-xs text-slate-300">
+                <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-slate-800/60 border border-slate-700/80 text-xs text-slate-300 text-left">
                   <Music className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span className="truncate">{selectedBubbleUser.currentSong}</span>
+                  <span className="truncate font-medium">{selectedBubbleUser.currentSong}</span>
                 </div>
               )}
 
               {/* Formulario de Saludo para "Conectar Burbujas" */}
-              <form onSubmit={handleConfirmSendRequest} className="space-y-3 pt-1">
+              <form onSubmit={handleConfirmSendRequest} className="space-y-3 pt-1 text-left">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                     Mensaje para Conectar Burbujas 🫧
@@ -415,7 +442,7 @@ export const RadarBurbujasModal: React.FC<RadarBurbujasModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSendingRequest}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white font-extrabold text-xs shadow-xl shadow-pink-950/40 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <SingleBubbleIcon className="w-4 h-4" />
                   <span>Conectar Burbujas con {selectedBubbleUser.name.split(' ')[0]}</span>

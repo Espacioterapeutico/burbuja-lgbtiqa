@@ -226,28 +226,82 @@ export function App() {
   useEffect(() => {
     if (useMockData) return;
 
-    supabase.from('communities').select('*').then(({ data }) => {
+    const isSuperadminUser = authService.isSuperadmin(currentUser);
+
+    const loadCommunities = async () => {
+      let savedJoinedIds: string[] = [];
+      try {
+        savedJoinedIds = JSON.parse(localStorage.getItem(`burbuja_joined_communities_${currentUser.id}`) || '[]');
+      } catch {}
+
+      const { data } = await supabase.from('communities').select('*');
       if (data && data.length > 0) {
-        const mapped: Community[] = data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description || '',
-          category: c.category || 'General',
-          icon: c.icon || '🫧',
-          isPinned: false,
-          isJoined: true,
-          isClosed: !!c.is_closed,
-          isFrozen: !!c.is_frozen,
-          creatorId: c.creator_id,
-          memberCount: 1,
-          activeNow: 1,
-          tags: [c.category || 'General'],
-          members: []
-        }));
+        const mapped: Community[] = data.map((c: any) => {
+          const isCreator = c.creator_id === currentUser.id;
+          const hasJoinedLocally = savedJoinedIds.includes(c.id);
+          // Si es Superadmin / Fundador: acceso total como supervisor a todas las comunidades del sistema
+          // Si es usuario regular: sólo las que creó, a las que se unió, o la comunitaria principal
+          const isJoined = isSuperadminUser || isCreator || hasJoinedLocally || c.id === 'comm-bqto';
+
+          return {
+            id: c.id,
+            name: c.name,
+            description: c.description || '',
+            category: c.category || 'General',
+            icon: c.icon || '🫧',
+            isPinned: false,
+            isJoined: isJoined,
+            isClosed: !!c.is_closed,
+            isFrozen: !!c.is_frozen,
+            creatorId: c.creator_id,
+            bannedWords: c.banned_words || [],
+            autoMuteDuration: c.auto_mute_duration || 'Silenciado por 24 horas',
+            memberCount: 1,
+            activeNow: 1,
+            tags: [c.category || 'General'],
+            members: isSuperadminUser
+              ? [
+                  {
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    userAvatar: currentUser.avatar,
+                    userPin: currentUser.pin,
+                    role: 'admin',
+                    joinedAt: 'Supervisor Global'
+                  }
+                ]
+              : []
+          };
+        });
+
         setCommunities(mapped);
-        setSelectedCommunity(mapped[0]);
+        setSelectedCommunity(prev => {
+          if (prev && prev.id !== 'none') {
+            const found = mapped.find(m => m.id === prev.id);
+            if (found) return found;
+          }
+          return mapped[0];
+        });
       }
-    });
+    };
+
+    loadCommunities();
+
+    // Suscripción Realtime a nuevas comunidades en Supabase
+    const commChannel = supabase
+      .channel('communities_realtime_stream')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'communities'
+        },
+        () => {
+          loadCommunities();
+        }
+      )
+      .subscribe();
 
     supabase.from('profiles').select('*').then(({ data }) => {
       if (data) {
@@ -295,7 +349,11 @@ export function App() {
         );
       }
     });
-  }, [isLoggedIn, isSuperadminOpen]);
+
+    return () => {
+      supabase.removeChannel(commChannel);
+    };
+  }, [isLoggedIn, isSuperadminOpen, currentUser.id]);
 
   // Sincronizar solicitudes de conexión y contactos para el usuario activo
   useEffect(() => {
@@ -661,6 +719,14 @@ export function App() {
     setCommunities(prev => [newCommunity, ...prev]);
     setSelectedCommunity(newCommunity);
     setActiveTab('comunidades');
+
+    try {
+      const savedJoined = JSON.parse(localStorage.getItem(`burbuja_joined_communities_${currentUser.id}`) || '[]');
+      if (!savedJoined.includes(newCommunity.id)) {
+        localStorage.setItem(`burbuja_joined_communities_${currentUser.id}`, JSON.stringify([...savedJoined, newCommunity.id]));
+      }
+    } catch {}
+
     supabase.from('communities').insert([{
       id: newCommunity.id,
       name: newCommunity.name,
@@ -675,7 +741,7 @@ export function App() {
       id: `toast-comm-${Date.now()}`,
       title: '¡Comunidad Creada!',
       message: `Eres 👑 Administrador de "${newCommunity.name}".`,
-      avatar: currentUser.avatar
+      avatar: newCommunity.icon
     });
   };
 
@@ -1349,6 +1415,12 @@ export function App() {
       setSelectedCommunity(emptyCommunityFallback);
     }
 
+    try {
+      const savedJoined = JSON.parse(localStorage.getItem(`burbuja_joined_communities_${currentUser.id}`) || '[]');
+      const filtered = savedJoined.filter((id: string) => id !== communityId);
+      localStorage.setItem(`burbuja_joined_communities_${currentUser.id}`, JSON.stringify(filtered));
+    } catch {}
+
     supabase
       .from('community_members')
       .delete()
@@ -1471,6 +1543,13 @@ export function App() {
       spread: 65,
       origin: { y: 0.6 }
     });
+
+    try {
+      const savedJoined = JSON.parse(localStorage.getItem(`burbuja_joined_communities_${currentUser.id}`) || '[]');
+      if (!savedJoined.includes(commToJoin.id)) {
+        localStorage.setItem(`burbuja_joined_communities_${currentUser.id}`, JSON.stringify([...savedJoined, commToJoin.id]));
+      }
+    } catch {}
 
     triggerMsnToast({
       id: `toast-join-${Date.now()}`,

@@ -3,6 +3,7 @@ import { X, Search, Globe, KeyRound } from 'lucide-react';
 import type { Community, CommunityPost, UserProfile } from '../types';
 import { CommunityCard } from './dashboard/CommunityCard';
 import { SoapBubble } from './SoapBubble';
+import { authService } from '../services/authService';
 
 interface ExploreCommunitiesModalProps {
   isOpen: boolean;
@@ -35,14 +36,16 @@ export const ExploreCommunitiesModal: React.FC<ExploreCommunitiesModalProps> = (
 
   if (!isOpen) return null;
 
+  const isSuperadmin = authService.isSuperadmin(currentUser);
+
   // Filtrar comunidades que NO tengan al usuario agregado/unido
+  // (Para el Superadmin, se muestran todas las comunidades para supervisión completa del sistema)
   const unjoinedCommunities = communities.filter(c => {
-    // Si tiene la propiedad isJoined explícita
+    if (isSuperadmin) return true;
     if (c.isJoined === true) return false;
-    if (c.isJoined === false) return true;
-    // Si no, verificar en members o creatorId
-    const isMember = c.members?.some(m => m.userId === currentUser.id) || c.creatorId === currentUser.id;
-    return !isMember;
+    if (c.creatorId === currentUser.id) return false;
+    if (c.members?.some(m => m.userId === currentUser.id)) return false;
+    return true;
   });
 
   // Filtrado por buscador y etiquetas

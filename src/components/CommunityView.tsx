@@ -758,7 +758,11 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
 
         {/* Nombre de la Comunidad y Miembros - Siempre blanco y legible en cualquier tema */}
         <div className="flex items-center gap-2 min-w-0 px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/20 text-center shadow-lg community-feed-header">
-          <span className="text-lg shrink-0">{selectedCommunity.icon}</span>
+          {selectedCommunity.icon?.startsWith('data:') || selectedCommunity.icon?.startsWith('http') || selectedCommunity.icon?.startsWith('/') ? (
+            <img src={selectedCommunity.icon} alt={selectedCommunity.name} className="w-5 h-5 rounded-md object-cover shrink-0" />
+          ) : (
+            <span className="text-lg shrink-0">{selectedCommunity.icon}</span>
+          )}
           <div className="truncate text-left">
             <h3 
               className="font-bold text-xs !text-white keep-white truncate drop-shadow-md"
@@ -1193,7 +1197,11 @@ export const CommunityView: React.FC<CommunityViewProps> = ({
           {/* Chat Top Bar */}
           <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{selectedCommunity.icon}</span>
+              {selectedCommunity.icon?.startsWith('data:') || selectedCommunity.icon?.startsWith('http') || selectedCommunity.icon?.startsWith('/') ? (
+                <img src={selectedCommunity.icon} alt={selectedCommunity.name} className="w-8 h-8 rounded-xl object-cover shrink-0 border border-slate-700" />
+              ) : (
+                <span className="text-2xl">{selectedCommunity.icon}</span>
+              )}
               <div>
                 <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
                   {selectedCommunity.name}

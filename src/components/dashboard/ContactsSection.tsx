@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Music, 
   MessageCircle, 
@@ -12,7 +12,9 @@ import {
   Globe,
   Check,
   X,
-  Trash2
+  Trash2,
+  MoreVertical,
+  Sparkles
 } from 'lucide-react';
 import type { Contact, BubbleConnectionRequest } from '../../types';
 import { StatusBadge, getStatusConfig } from '../StatusBadge';
@@ -60,6 +62,36 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [selectedBlockReason, setSelectedBlockReason] = useState(BLOCK_REASONS[0]);
   const [customBlockReason, setCustomBlockReason] = useState('');
+  const [actionMenuContact, setActionMenuContact] = useState<Contact | null>(null);
+
+  const longPressTimerRef = useRef<any>(null);
+  const isLongPressTriggeredRef = useRef(false);
+
+  const startLongPress = (contact: Contact) => {
+    isLongPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+      setActionMenuContact(contact);
+    }, 450);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleClickContact = (contact: Contact) => {
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+    onOpenDirectChat?.(contact);
+  };
 
   const activeContacts = contacts.filter(c => !c.isBlockedByMe && !c.hasBlockedMe);
   const blockedContacts = contacts.filter(c => c.isBlockedByMe || c.hasBlockedMe);
@@ -228,9 +260,19 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
           return (
             <div
               key={contact.id}
-              onClick={() => onOpenDirectChat?.(contact)}
-              className="group relative flex items-center justify-between p-3.5 rounded-3xl bg-slate-900/75 hover:bg-slate-900 border border-slate-800/80 hover:border-pink-500/50 transition-all shadow-sm cursor-pointer"
-              title="Toca para abrir el chat privado 1 a 1"
+              onClick={() => handleClickContact(contact)}
+              onMouseDown={() => startLongPress(contact)}
+              onMouseUp={cancelLongPress}
+              onMouseLeave={cancelLongPress}
+              onTouchStart={() => startLongPress(contact)}
+              onTouchEnd={cancelLongPress}
+              onTouchMove={cancelLongPress}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setActionMenuContact(contact);
+              }}
+              className="group relative flex items-center justify-between p-3.5 rounded-3xl bg-slate-900/75 hover:bg-slate-900 border border-slate-800/80 hover:border-pink-500/50 transition-all shadow-sm cursor-pointer select-none active:scale-[0.99]"
+              title="Toca para chatear • Mantén presionado para ver opciones"
             >
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 {/* Avatar / Historia */}
@@ -249,6 +291,7 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                     className={`w-12 h-12 rounded-2xl object-cover border ${
                       hasStory ? 'border-pink-500 ring-2 ring-pink-500/40' : 'border-slate-800'
                     }`}
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg'; }}
                   />
                   {(() => {
                     const stConf = getStatusConfig(contact.status, contact.customStatusLabel, contact.customStatusColor);
@@ -268,7 +311,7 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-slate-100 group-hover:text-pink-300 transition-colors truncate flex items-center gap-1.5">
                       {contact.name}
-                      {(contact.id === 'burbuja-oficial' || contact.pin === 'BL-94X7A' || contact.name === 'Burbuja LGBTIQ') && (
+                      {(contact.id === 'superadmin-root' || contact.id === 'burbuja-oficial' || contact.pin === 'BL-94X7A' || contact.name === 'Burbuja LGBTIQ') && (
                         <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 font-bold uppercase tracking-wider">
                           Oficial 🫧
                         </span>
@@ -284,7 +327,7 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                     />
                   </div>
 
-                  <p className="text-xs text-slate-400 truncate mt-0.5 max-w-[190px] sm:max-w-[240px]">
+                  <p className="text-xs text-slate-400 truncate mt-0.5 max-w-[200px] sm:max-w-[260px]">
                     {contact.personalMessage}
                   </p>
 
@@ -297,58 +340,24 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                 </div>
               </div>
 
-              {/* Botones de Acción Rápida */}
-              <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                {/* Indicador de Chatear 1 a 1 */}
+              {/* Botones Limpios: Chat directo + Menú de opciones (Long-Press o 3 puntos) */}
+              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   onClick={() => onOpenDirectChat?.(contact)}
-                  className="p-2 rounded-xl bg-pink-600/10 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/30 transition-all active:scale-95"
+                  className="p-2.5 rounded-2xl bg-pink-600/10 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/30 transition-all active:scale-95 shadow-sm"
                   title="Abrir chat privado 1 a 1"
                 >
                   <MessageCircle className="w-4 h-4" />
                 </button>
 
-                {contact.allowWhatsAppBridge && contact.whatsAppNumber && (
-                  <a
-                    href={`https://wa.me/${contact.whatsAppNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
-                      '¡Hola! Te contacto desde la Burbuja LGBTIQ+ 👋'
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-700/50 text-emerald-300 transition-colors"
-                    title="Contacto externo por WhatsApp"
-                  >
-                    <MessageCircle className="w-4 h-4 text-emerald-400" />
-                  </a>
-                )}
-
-                {/* Botón de Eliminar Contacto */}
                 <button
                   type="button"
-                  onClick={() => setContactToDelete(contact)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 transition-colors"
-                  title="Eliminar de mis contactos"
+                  onClick={() => setActionMenuContact(contact)}
+                  className="p-2 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                  title="Más opciones (mantener presionado)"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-
-                {/* Botón de Bloqueo Transparente */}
-                <button
-                  onClick={() => setBlockingTarget(contact)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-amber-400 hover:bg-amber-950/40 border border-transparent hover:border-amber-900/40 transition-colors"
-                  title="Bloquear contacto con motivo transparente"
-                >
-                  <UserX className="w-4 h-4" />
-                </button>
-
-                {/* Botón de Reportar */}
-                <button
-                  onClick={() => onOpenReport(contact)}
-                  className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/40 transition-colors"
-                  title="Reportar usuario (Alarma de corresponsabilidad)"
-                >
-                  <ShieldAlert className="w-4 h-4" />
+                  <MoreVertical className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -567,7 +576,180 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
         </div>
       )}
 
-      {/* 5. Fichas de Bloqueo & Seguridad (Conservadas para denuncias) */}
+      {/* 5. MODAL BOTTOM SHEET DE OPCIONES POR LONG-PRESS / PULSACIÓN PROLONGADA */}
+      {actionMenuContact && (
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setActionMenuContact(null)}
+        >
+          <div 
+            className="w-full max-w-sm rounded-t-3xl sm:rounded-3xl bg-slate-900 border-t sm:border border-slate-700/80 p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom-5 sm:zoom-in-95 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del contacto seleccionado */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={actionMenuContact.avatar} 
+                  alt={actionMenuContact.name} 
+                  className="w-12 h-12 rounded-2xl object-cover border border-pink-500/50" 
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg'; }}
+                />
+                <div>
+                  <h4 className="font-extrabold text-white text-sm flex items-center gap-1.5">
+                    {actionMenuContact.name}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-pink-400 font-semibold">{actionMenuContact.pronouns}</span>
+                    <span className="font-mono text-[10px] text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                      {actionMenuContact.pin}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActionMenuContact(null)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Opciones del menú */}
+            <div className="space-y-1.5">
+              {/* Chatear */}
+              <button
+                type="button"
+                onClick={() => {
+                  const target = actionMenuContact;
+                  setActionMenuContact(null);
+                  onOpenDirectChat?.(target);
+                }}
+                className="w-full p-2.5 rounded-2xl bg-pink-950/40 hover:bg-pink-900/60 border border-pink-800/40 text-pink-200 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+              >
+                <div className="p-2 rounded-xl bg-pink-600 text-white shadow">
+                  <MessageCircle className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block text-white">Abrir Chat Privado</span>
+                  <p className="text-[10px] text-pink-300/70 font-normal">Conversación segura protegida 1 a 1</p>
+                </div>
+              </button>
+
+              {/* Ver historia / estado */}
+              {actionMenuContact.stories && actionMenuContact.stories.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = actionMenuContact;
+                    setActionMenuContact(null);
+                    onViewStory(target);
+                  }}
+                  className="w-full p-2.5 rounded-2xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-800/40 text-purple-200 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+                >
+                  <div className="p-2 rounded-xl bg-purple-600 text-white shadow">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block text-white">Ver Historias / Estado</span>
+                    <p className="text-[10px] text-purple-300/70 font-normal">Publicaciones efímeras del perfil</p>
+                  </div>
+                </button>
+              )}
+
+              {/* WhatsApp Bridge */}
+              {actionMenuContact.allowWhatsAppBridge && actionMenuContact.whatsAppNumber && (
+                <a
+                  href={`https://wa.me/${actionMenuContact.whatsAppNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    '¡Hola! Te contacto desde la Burbuja LGBTIQ+ 👋'
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setActionMenuContact(null)}
+                  className="w-full p-2.5 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/40 text-emerald-200 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98]"
+                >
+                  <div className="p-2 rounded-xl bg-emerald-600 text-white shadow">
+                    <MessageCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block text-white">Contactar por WhatsApp</span>
+                    <p className="text-[10px] text-emerald-300/70 font-normal">Canal externo autorizado</p>
+                  </div>
+                </a>
+              )}
+
+              {/* Eliminar */}
+              <button
+                type="button"
+                onClick={() => {
+                  const target = actionMenuContact;
+                  setActionMenuContact(null);
+                  setContactToDelete(target);
+                }}
+                className="w-full p-2.5 rounded-2xl bg-slate-950 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-900/40 text-rose-300 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+              >
+                <div className="p-2 rounded-xl bg-rose-950 border border-rose-800 text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block text-rose-200">Eliminar de Contactos</span>
+                  <p className="text-[10px] text-slate-400 font-normal">Quitar de tu lista personal de chats</p>
+                </div>
+              </button>
+
+              {/* Bloquear */}
+              <button
+                type="button"
+                onClick={() => {
+                  const target = actionMenuContact;
+                  setActionMenuContact(null);
+                  setBlockingTarget(target);
+                }}
+                className="w-full p-2.5 rounded-2xl bg-slate-950 hover:bg-amber-950/40 border border-slate-800 hover:border-amber-900/40 text-amber-300 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+              >
+                <div className="p-2 rounded-xl bg-amber-950 border border-amber-800 text-amber-400">
+                  <UserX className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block text-amber-200">Bloquear Contacto</span>
+                  <p className="text-[10px] text-slate-400 font-normal">Motivo transparente (sin ghosting)</p>
+                </div>
+              </button>
+
+              {/* Denunciar */}
+              <button
+                type="button"
+                onClick={() => {
+                  const target = actionMenuContact;
+                  setActionMenuContact(null);
+                  onOpenReport(target);
+                }}
+                className="w-full p-2.5 rounded-2xl bg-slate-950 hover:bg-rose-950/40 border border-slate-800 hover:border-rose-900/40 text-rose-400 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+              >
+                <div className="p-2 rounded-xl bg-rose-950 border border-rose-800 text-rose-400">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="block text-rose-300">Denunciar a Seguridad</span>
+                  <p className="text-[10px] text-slate-400 font-normal">Alarma comunitaria al referidor</p>
+                </div>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActionMenuContact(null)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Fichas de Bloqueo & Seguridad (Conservadas para denuncias) */}
       <BlockedDossiersSection
         blockedContacts={blockedContacts}
         onToggleBlockContact={onToggleBlockContact}

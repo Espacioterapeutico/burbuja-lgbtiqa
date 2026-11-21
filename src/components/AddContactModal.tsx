@@ -364,32 +364,35 @@ export const AddContactModal: React.FC<AddContactModalProps> = ({
             {/* VISTA PREVIA DEL PERFIL ENCONTRADO */}
             {foundContact && !requestSent && !adminDirectAdded && (
               <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="rounded-2xl bg-slate-950/80 border border-pink-500/30 p-4 space-y-3">
-                  <div className="flex items-center gap-3.5">
+                <div className="rounded-2xl bg-slate-950/80 border border-pink-500/30 p-4 space-y-3.5 text-center">
+                  {/* Foto de perfil grande y destacada */}
+                  <div className="flex flex-col items-center">
                     <div className="relative">
-                      <img
-                        src={foundContact.avatar}
-                        alt={foundContact.name}
-                        className="w-14 h-14 rounded-full object-cover ring-2 ring-pink-500/60 shadow-md"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/logo.svg';
-                        }}
-                      />
-                      <span className="absolute -bottom-1 -right-1 text-xs">🫧</span>
+                      <div className="w-24 h-24 rounded-3xl p-1 bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 shadow-xl shadow-pink-950/60">
+                        <img
+                          src={foundContact.avatar}
+                          alt={foundContact.name}
+                          className="w-full h-full rounded-[22px] object-cover bg-slate-950"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/logo.svg';
+                          }}
+                        />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 text-sm bg-slate-900 border border-pink-500/50 rounded-full p-0.5">🫧</span>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="font-bold text-white text-base truncate">
+                    <div className="mt-2.5 space-y-1">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        <h4 className="font-extrabold text-white text-base">
                           {foundContact.name}
                         </h4>
-                        <span className="text-[11px] text-pink-400/90 font-medium">
-                          ({foundContact.pronouns})
+                        <span className="text-xs text-pink-400 font-semibold px-2 py-0.5 rounded-full bg-pink-950/60 border border-pink-800/50">
+                          {foundContact.pronouns}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-lg bg-pink-950/60 text-pink-300 border border-pink-800/50">
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-lg bg-slate-900 text-slate-300 border border-slate-700/80">
                           {foundContact.pin}
                         </span>
                         <StatusBadge status={foundContact.status} />
@@ -398,12 +401,12 @@ export const AddContactModal: React.FC<AddContactModalProps> = ({
                   </div>
 
                   {foundContact.personalMessage && (
-                    <p className="text-xs text-slate-300 italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80">
+                    <p className="text-xs text-slate-300 italic bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 text-left">
                       "{foundContact.personalMessage}"
                     </p>
                   )}
 
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
+                  <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
                     {foundContact.city && (
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-cyan-400" />
@@ -411,7 +414,7 @@ export const AddContactModal: React.FC<AddContactModalProps> = ({
                       </span>
                     )}
                     {foundContact.currentSong && (
-                      <span className="flex items-center gap-1 truncate">
+                      <span className="flex items-center gap-1 truncate max-w-[200px]">
                         <Music className="w-3 h-3 text-pink-400 shrink-0" />
                         <span className="truncate">{foundContact.currentSong}</span>
                       </span>

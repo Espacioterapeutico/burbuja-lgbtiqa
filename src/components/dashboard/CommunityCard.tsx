@@ -63,10 +63,14 @@ export const CommunityCard: React.FC<CommunityCardProps> = ({
               e.stopPropagation();
               setShowDescriptionModal(true);
             }}
-            className="relative w-10 h-10 rounded-2xl bg-slate-950 border border-slate-800 hover:border-pink-500/70 flex items-center justify-center text-xl shrink-0 transition-transform hover:scale-110 active:scale-95 group/icon shadow-inner"
+            className="relative w-10 h-10 rounded-2xl bg-slate-950 border border-slate-800 hover:border-pink-500/70 flex items-center justify-center text-xl shrink-0 transition-transform hover:scale-110 active:scale-95 group/icon shadow-inner overflow-hidden"
             title="Toca para ver la descripción e información del grupo"
           >
-            <span>{comm.icon}</span>
+            {comm.icon?.startsWith('data:') || comm.icon?.startsWith('http') || comm.icon?.startsWith('/') ? (
+              <img src={comm.icon} alt={comm.name} className="w-full h-full object-cover" />
+            ) : (
+              <span>{comm.icon || '🫧'}</span>
+            )}
             <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-900 border border-pink-500/60 flex items-center justify-center text-[9px] text-pink-300 shadow">
               <Info className="w-2.5 h-2.5" />
             </span>
@@ -165,8 +169,12 @@ export const CommunityCard: React.FC<CommunityCardProps> = ({
             {/* Header con foto ampliada y nombre */}
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-pink-500/60 flex items-center justify-center text-3xl shadow-lg">
-                  {comm.icon}
+                <div className="w-14 h-14 rounded-2xl bg-slate-950 border-2 border-pink-500/60 flex items-center justify-center text-3xl shadow-lg overflow-hidden shrink-0">
+                  {comm.icon?.startsWith('data:') || comm.icon?.startsWith('http') || comm.icon?.startsWith('/') ? (
+                    <img src={comm.icon} alt={comm.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{comm.icon || '🫧'}</span>
+                  )}
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-white flex items-center gap-1.5">

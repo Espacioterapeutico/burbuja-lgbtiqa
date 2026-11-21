@@ -14,7 +14,9 @@ import {
   ShieldAlert,
   Flag,
   UserMinus,
-  Eye
+  Eye,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import type { Contact, UserProfile, ChatMessage } from '../types';
 import { playVoiceNoteAudio, stopVoiceNoteAudio, playZumpSound } from '../utils/sound';
@@ -29,6 +31,7 @@ interface DirectChatModalProps {
   onDeleteContact?: (contact: Contact) => void;
   onBlockContact?: (contact: Contact, reason?: string) => void;
   onReportContact?: (contact: Contact) => void;
+  onToggleMuteContact?: (contact: Contact) => void;
 }
 
 /**
@@ -92,7 +95,8 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
   onClose,
   onDeleteContact,
   onBlockContact,
-  onReportContact
+  onReportContact,
+  onToggleMuteContact
 }) => {
   const [chatList, setChatList] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -582,6 +586,27 @@ export const DirectChatModal: React.FC<DirectChatModalProps> = ({
                     >
                       <Trash2 className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>Vaciar chat</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onToggleMuteContact?.(contact);
+                      }}
+                      className="w-full px-3.5 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition-colors cursor-pointer"
+                    >
+                      {contact.isMuted ? (
+                        <>
+                          <Bell className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>Reactivar avisos</span>
+                        </>
+                      ) : (
+                        <>
+                          <BellOff className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>Silenciar avisos</span>
+                        </>
+                      )}
                     </button>
                   </div>
 

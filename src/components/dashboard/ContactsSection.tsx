@@ -14,7 +14,9 @@ import {
   X,
   Trash2,
   MoreVertical,
-  Sparkles
+  Sparkles,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import type { Contact, BubbleConnectionRequest } from '../../types';
 import { StatusBadge, getStatusConfig } from '../StatusBadge';
@@ -33,6 +35,7 @@ interface ContactsSectionProps {
   onAcceptBubbleRequest?: (req: BubbleConnectionRequest) => void;
   onRejectBubbleRequest?: (reqId: string) => void;
   onRemoveContact?: (contact: Contact) => void;
+  onToggleMuteContact?: (contact: Contact) => void;
 }
 
 const BLOCK_REASONS = [
@@ -54,7 +57,8 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
   bubbleRequests = [],
   onAcceptBubbleRequest,
   onRejectBubbleRequest,
-  onRemoveContact
+  onRemoveContact,
+  onToggleMuteContact
 }) => {
   const [showRequestsTray, setShowRequestsTray] = useState(true);
   const [inspectedRequest, setInspectedRequest] = useState<BubbleConnectionRequest | null>(null);
@@ -330,6 +334,11 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                       customLabel={contact.customStatusLabel} 
                       customColor={contact.customStatusColor} 
                     />
+                    {contact.isMuted && (
+                      <span className="inline-flex items-center text-slate-500" title="Contacto silenciado (sin notificaciones de estado)">
+                        <BellOff className="w-3.5 h-3.5 text-slate-400" />
+                      </span>
+                    )}
                   </div>
 
                   <p className={`text-xs truncate mt-0.5 max-w-[200px] sm:max-w-[260px] ${
@@ -697,6 +706,29 @@ export const ContactsSection: React.FC<ContactsSectionProps> = ({
                   </div>
                 </a>
               )}
+
+              {/* Silenciar / Desilenciar */}
+              <button
+                type="button"
+                onClick={() => {
+                  const target = actionMenuContact;
+                  setActionMenuContact(null);
+                  onToggleMuteContact?.(target);
+                }}
+                className="w-full p-2.5 rounded-2xl bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-xs font-bold transition-all flex items-center gap-3 active:scale-[0.98] cursor-pointer"
+              >
+                <div className={`p-2 rounded-xl ${actionMenuContact.isMuted ? 'bg-amber-950 border border-amber-800 text-amber-400' : 'bg-slate-800 text-pink-400'}`}>
+                  {actionMenuContact.isMuted ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                </div>
+                <div>
+                  <span className="block text-white">
+                    {actionMenuContact.isMuted ? 'Reactivar Notificaciones' : 'Silenciar Contacto'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-normal">
+                    {actionMenuContact.isMuted ? 'Recibirás avisos de conexión y estado' : 'Sin avisos de conexión ni cambios de estado'}
+                  </p>
+                </div>
+              </button>
 
               {/* Eliminar */}
               <button

@@ -59,6 +59,7 @@ export interface Contact {
   blockReason?: string; // Motivo transparente del bloqueo visible para la persona
   distanceKm?: number; // Distancia aproximada para el radar de burbujas
   city?: string; // Ciudad (ej: Barquisimeto, Cabudare)
+  isMuted?: boolean; // Silenciar notificaciones de conexión y cambios de estado
   unreadCount?: number; // Contador de mensajes no leídos (n)
   lastMessage?: string; // Último mensaje enviado o recibido
   lastMessageTime?: string; // Hora del último mensaje

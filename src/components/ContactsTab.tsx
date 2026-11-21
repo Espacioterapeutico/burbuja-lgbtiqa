@@ -30,6 +30,7 @@ interface ContactsTabProps {
   officialContact?: Contact;
   isAdmin?: boolean;
   onOpenCreateOfficialStory?: () => void;
+  onToggleMuteContact?: (contact: Contact) => void;
 }
 
 export const ContactsTab: React.FC<ContactsTabProps> = ({
@@ -51,7 +52,8 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
   onToggleBlockContact,
   officialContact,
   isAdmin = false,
-  onOpenCreateOfficialStory
+  onOpenCreateOfficialStory,
+  onToggleMuteContact
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -226,6 +228,7 @@ export const ContactsTab: React.FC<ContactsTabProps> = ({
         onAcceptBubbleRequest={onAcceptBubbleRequest}
         onRejectBubbleRequest={onRejectBubbleRequest}
         onRemoveContact={onRemoveContact}
+        onToggleMuteContact={onToggleMuteContact}
       />
     </div>
   );

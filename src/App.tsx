@@ -695,14 +695,16 @@ export function App() {
             if (!match) return prev;
             if (match.status === newStatus) return prev;
 
-            triggerBubbleStatusNotification({
-              id: `bubble-${Date.now()}-${Math.random()}`,
-              userName: updated.name || match.name,
-              userAvatar: updated.avatar || match.avatar || '/logo.svg',
-              userPin: updated.pin,
-              status: newStatus,
-              message: getStatusLabelText(newStatus)
-            });
+            if (!match.isMuted) {
+              triggerBubbleStatusNotification({
+                id: `bubble-${Date.now()}-${Math.random()}`,
+                userName: updated.name || match.name,
+                userAvatar: updated.avatar || match.avatar || '/logo.svg',
+                userPin: updated.pin,
+                status: newStatus,
+                message: getStatusLabelText(newStatus)
+              });
+            }
 
             const nextContacts = prev.map(c => (c.id === match.id ? { ...c, status: newStatus } : c));
             if (currentUser?.pin) {
@@ -732,14 +734,16 @@ export function App() {
           if (!match) return prev;
           if (match.status === payload.newStatus) return prev;
 
-          triggerBubbleStatusNotification({
-            id: `bubble-${Date.now()}-${Math.random()}`,
-            userName: payload.userName || match.name,
-            userAvatar: payload.userAvatar || match.avatar || '/logo.svg',
-            userPin: payload.userPin,
-            status: payload.newStatus,
-            message: getStatusLabelText(payload.newStatus)
-          });
+          if (!match.isMuted) {
+            triggerBubbleStatusNotification({
+              id: `bubble-${Date.now()}-${Math.random()}`,
+              userName: payload.userName || match.name,
+              userAvatar: payload.userAvatar || match.avatar || '/logo.svg',
+              userPin: payload.userPin,
+              status: payload.newStatus,
+              message: getStatusLabelText(payload.newStatus)
+            });
+          }
 
           const nextContacts = prev.map(c => (c.id === match.id ? { ...c, status: payload.newStatus } : c));
           if (currentUser?.pin) {
@@ -1346,10 +1350,10 @@ export function App() {
   };
 
   const handleToggleBlockContact = (contact: Contact, reason?: string) => {
-    setContacts(prev =>
-      prev.map(c => {
-        if (c.id === contact.id) {
-          const isNowBlocked = !c.isBlockedByMe;
+    const isNowBlocked = !contact.isBlockedByMe;
+    setContacts(prev => {
+      const updated = prev.map(c => {
+        if (c.id === contact.id || (contact.pin && c.pin?.toUpperCase() === contact.pin.toUpperCase())) {
           return {
             ...c,
             isBlockedByMe: isNowBlocked,
@@ -1358,14 +1362,69 @@ export function App() {
           };
         }
         return c;
-      })
-    );
+      });
+      if (currentUser?.pin) {
+        try {
+          localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
+    setActiveDirectChatContact(prev => {
+      if (!prev) return null;
+      if (prev.id === contact.id || (contact.pin && prev.pin?.toUpperCase() === contact.pin.toUpperCase())) {
+        return {
+          ...prev,
+          isBlockedByMe: isNowBlocked,
+          blockedAt: isNowBlocked ? 'Hoy' : undefined,
+          blockReason: isNowBlocked ? (reason || 'Límites personales y tranquilidad') : undefined
+        };
+      }
+      return prev;
+    });
+
     triggerMsnToast({
       id: `toast-block-${Date.now()}`,
       title: contact.isBlockedByMe ? 'Contacto Desbloqueado' : 'Contacto Bloqueado',
       message: contact.isBlockedByMe 
         ? `Has restaurado la interacción con ${contact.name}.`
         : `Has bloqueado a ${contact.name}. Motivo registrado con transparencia en Seguridad.`,
+      avatar: contact.avatar
+    });
+  };
+
+  const handleToggleMuteContact = (contact: Contact) => {
+    const nextMuted = !contact.isMuted;
+    setContacts(prev => {
+      const updated = prev.map(c => {
+        if ((contact.pin && c.pin?.toUpperCase() === contact.pin.toUpperCase()) || (contact.id && c.id === contact.id)) {
+          return { ...c, isMuted: nextMuted };
+        }
+        return c;
+      });
+      if (currentUser?.pin) {
+        try {
+          localStorage.setItem(`burbuja_contacts_${currentUser.pin.toUpperCase()}`, JSON.stringify(updated));
+        } catch {}
+      }
+      return updated;
+    });
+
+    setActiveDirectChatContact(prev => {
+      if (!prev) return null;
+      if ((contact.pin && prev.pin?.toUpperCase() === contact.pin.toUpperCase()) || (contact.id && prev.id === contact.id)) {
+        return { ...prev, isMuted: nextMuted };
+      }
+      return prev;
+    });
+
+    triggerMsnToast({
+      id: `toast-mute-${Date.now()}`,
+      title: nextMuted ? 'Contacto Silenciado 🔕' : 'Notificaciones Activadas 🔔',
+      message: nextMuted 
+        ? `No recibirás avisos de conexión ni cambios de estado de ${contact.name}.`
+        : `Volverás a recibir avisos de conexión y estado de ${contact.name}.`,
       avatar: contact.avatar
     });
   };
@@ -1952,6 +2011,7 @@ export function App() {
                 onViewMyStory={handleViewMyStory}
                 onOpenReport={(contact) => setReportTargetContact(contact)}
                 onToggleBlockContact={handleToggleBlockContact}
+                onToggleMuteContact={handleToggleMuteContact}
                 officialContact={officialBurbujaContact}
                 isAdmin={authService.isSuperadmin(currentUser)}
                 onOpenCreateOfficialStory={() => {
@@ -2041,6 +2101,7 @@ export function App() {
         onCloseDirectChat={() => setActiveDirectChatContact(null)}
         onDeleteContact={handleRemoveContact}
         onBlockContact={(contact, reason) => handleToggleBlockContact(contact, reason)}
+        onToggleMuteContact={handleToggleMuteContact}
         onOpenReportContact={(contact) => setReportTargetContact(contact)}
         onToggleTheme={handleToggleTheme}
         onOpenSharePIN={() => setIsSharePINOpen(true)}

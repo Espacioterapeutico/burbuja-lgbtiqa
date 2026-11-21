@@ -94,6 +94,7 @@ interface GlobalModalsProps {
   onDeleteContact?: (contact: Contact) => void;
   onBlockContact?: (contact: Contact, reason?: string) => void;
   onOpenReportContact?: (contact: Contact) => void;
+  onToggleMuteContact?: (contact: Contact) => void;
 }
 
 export const GlobalModals: React.FC<GlobalModalsProps> = ({
@@ -162,7 +163,8 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
   onLeaveCommunity,
   onDeleteContact,
   onBlockContact,
-  onOpenReportContact
+  onOpenReportContact,
+  onToggleMuteContact
 }) => {
   return (
     <>
@@ -296,6 +298,7 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
           onDeleteContact={onDeleteContact}
           onBlockContact={onBlockContact}
           onReportContact={onOpenReportContact}
+          onToggleMuteContact={onToggleMuteContact}
         />
       )}
     </>
